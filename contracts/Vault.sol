@@ -72,8 +72,6 @@ contract Vault is Ownable2Step, ReentrancyGuard {
         BASE_REWARD_POOL = IBaseRewardPool(BOOSTER.poolInfo(_pid).crvRewards);
         LP = IERC20(_lp);
         PID = _pid;
-
-        LP.approve(address(BOOSTER), type(uint256).max);
     }
 
     // External functions
@@ -111,6 +109,8 @@ contract Vault is Ownable2Step, ReentrancyGuard {
 
         LP.transferFrom(msg.sender, address(this), _amount);
 
+        LP.approve(address(BOOSTER), _amount);
+        
         BOOSTER.deposit(PID, _amount, true);
 
         emit Deposit(msg.sender, _amount);

@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 // Openzeppelin
-import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 // Convex Interfaces
@@ -13,7 +12,7 @@ import "./interfaces/IBooster.sol";
  * @title Vault Contract
  * @dev A contract managing deposits, withdrawals, and rewards for a specific pool.
  */
-contract Vault is Ownable2Step, ReentrancyGuard {
+contract Vault is ReentrancyGuard {
     // Structs
 
     struct Reward {
@@ -110,7 +109,7 @@ contract Vault is Ownable2Step, ReentrancyGuard {
         LP.transferFrom(msg.sender, address(this), _amount);
 
         LP.approve(address(BOOSTER), _amount);
-        
+
         BOOSTER.deposit(PID, _amount, true);
 
         emit Deposit(msg.sender, _amount);

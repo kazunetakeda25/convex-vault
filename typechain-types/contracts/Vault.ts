@@ -63,17 +63,13 @@ export interface VaultInterface extends utils.Interface {
     "CVX()": FunctionFragment;
     "LP()": FunctionFragment;
     "PID()": FunctionFragment;
-    "acceptOwnership()": FunctionFragment;
     "claim()": FunctionFragment;
     "crvAmountPerShare()": FunctionFragment;
     "cvxAmountPerShare()": FunctionFragment;
     "deposit(uint256)": FunctionFragment;
     "depositAmountTotal()": FunctionFragment;
     "getPendingRewards((uint256,(uint256,uint256),(uint256,uint256)))": FunctionFragment;
-    "owner()": FunctionFragment;
-    "pendingOwner()": FunctionFragment;
-    "renounceOwnership()": FunctionFragment;
-    "transferOwnership(address)": FunctionFragment;
+    "getUserInfo(address)": FunctionFragment;
     "userInfo(address)": FunctionFragment;
     "withdraw(uint256)": FunctionFragment;
   };
@@ -86,17 +82,13 @@ export interface VaultInterface extends utils.Interface {
       | "CVX"
       | "LP"
       | "PID"
-      | "acceptOwnership"
       | "claim"
       | "crvAmountPerShare"
       | "cvxAmountPerShare"
       | "deposit"
       | "depositAmountTotal"
       | "getPendingRewards"
-      | "owner"
-      | "pendingOwner"
-      | "renounceOwnership"
-      | "transferOwnership"
+      | "getUserInfo"
       | "userInfo"
       | "withdraw"
   ): FunctionFragment;
@@ -110,10 +102,6 @@ export interface VaultInterface extends utils.Interface {
   encodeFunctionData(functionFragment: "CVX", values?: undefined): string;
   encodeFunctionData(functionFragment: "LP", values?: undefined): string;
   encodeFunctionData(functionFragment: "PID", values?: undefined): string;
-  encodeFunctionData(
-    functionFragment: "acceptOwnership",
-    values?: undefined
-  ): string;
   encodeFunctionData(functionFragment: "claim", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "crvAmountPerShare",
@@ -135,17 +123,8 @@ export interface VaultInterface extends utils.Interface {
     functionFragment: "getPendingRewards",
     values: [Vault.UserInfoStruct]
   ): string;
-  encodeFunctionData(functionFragment: "owner", values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "pendingOwner",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "renounceOwnership",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "transferOwnership",
+    functionFragment: "getUserInfo",
     values: [PromiseOrValue<string>]
   ): string;
   encodeFunctionData(
@@ -166,10 +145,6 @@ export interface VaultInterface extends utils.Interface {
   decodeFunctionResult(functionFragment: "CVX", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "LP", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "PID", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "acceptOwnership",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "claim", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "crvAmountPerShare",
@@ -188,17 +163,8 @@ export interface VaultInterface extends utils.Interface {
     functionFragment: "getPendingRewards",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "pendingOwner",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "renounceOwnership",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "transferOwnership",
+    functionFragment: "getUserInfo",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "userInfo", data: BytesLike): Result;
@@ -207,15 +173,11 @@ export interface VaultInterface extends utils.Interface {
   events: {
     "Claim(address,uint256,uint256)": EventFragment;
     "Deposit(address,uint256)": EventFragment;
-    "OwnershipTransferStarted(address,address)": EventFragment;
-    "OwnershipTransferred(address,address)": EventFragment;
     "Withdraw(address,uint256)": EventFragment;
   };
 
   getEvent(nameOrSignatureOrTopic: "Claim"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Deposit"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "OwnershipTransferStarted"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Withdraw"): EventFragment;
 }
 
@@ -238,30 +200,6 @@ export interface DepositEventObject {
 export type DepositEvent = TypedEvent<[string, BigNumber], DepositEventObject>;
 
 export type DepositEventFilter = TypedEventFilter<DepositEvent>;
-
-export interface OwnershipTransferStartedEventObject {
-  previousOwner: string;
-  newOwner: string;
-}
-export type OwnershipTransferStartedEvent = TypedEvent<
-  [string, string],
-  OwnershipTransferStartedEventObject
->;
-
-export type OwnershipTransferStartedEventFilter =
-  TypedEventFilter<OwnershipTransferStartedEvent>;
-
-export interface OwnershipTransferredEventObject {
-  previousOwner: string;
-  newOwner: string;
-}
-export type OwnershipTransferredEvent = TypedEvent<
-  [string, string],
-  OwnershipTransferredEventObject
->;
-
-export type OwnershipTransferredEventFilter =
-  TypedEventFilter<OwnershipTransferredEvent>;
 
 export interface WithdrawEventObject {
   user: string;
@@ -313,10 +251,6 @@ export interface Vault extends BaseContract {
 
     PID(overrides?: CallOverrides): Promise<[BigNumber]>;
 
-    acceptOwnership(
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<ContractTransaction>;
-
     claim(
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
@@ -339,18 +273,10 @@ export interface Vault extends BaseContract {
       [BigNumber, BigNumber] & { crvPending: BigNumber; cvxPending: BigNumber }
     >;
 
-    owner(overrides?: CallOverrides): Promise<[string]>;
-
-    pendingOwner(overrides?: CallOverrides): Promise<[string]>;
-
-    renounceOwnership(
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<ContractTransaction>;
-
-    transferOwnership(
-      newOwner: PromiseOrValue<string>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<ContractTransaction>;
+    getUserInfo(
+      user: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<[Vault.UserInfoStructOutput]>;
 
     userInfo(
       arg0: PromiseOrValue<string>,
@@ -381,10 +307,6 @@ export interface Vault extends BaseContract {
 
   PID(overrides?: CallOverrides): Promise<BigNumber>;
 
-  acceptOwnership(
-    overrides?: Overrides & { from?: PromiseOrValue<string> }
-  ): Promise<ContractTransaction>;
-
   claim(
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
@@ -407,18 +329,10 @@ export interface Vault extends BaseContract {
     [BigNumber, BigNumber] & { crvPending: BigNumber; cvxPending: BigNumber }
   >;
 
-  owner(overrides?: CallOverrides): Promise<string>;
-
-  pendingOwner(overrides?: CallOverrides): Promise<string>;
-
-  renounceOwnership(
-    overrides?: Overrides & { from?: PromiseOrValue<string> }
-  ): Promise<ContractTransaction>;
-
-  transferOwnership(
-    newOwner: PromiseOrValue<string>,
-    overrides?: Overrides & { from?: PromiseOrValue<string> }
-  ): Promise<ContractTransaction>;
+  getUserInfo(
+    user: PromiseOrValue<string>,
+    overrides?: CallOverrides
+  ): Promise<Vault.UserInfoStructOutput>;
 
   userInfo(
     arg0: PromiseOrValue<string>,
@@ -449,8 +363,6 @@ export interface Vault extends BaseContract {
 
     PID(overrides?: CallOverrides): Promise<BigNumber>;
 
-    acceptOwnership(overrides?: CallOverrides): Promise<void>;
-
     claim(overrides?: CallOverrides): Promise<void>;
 
     crvAmountPerShare(overrides?: CallOverrides): Promise<BigNumber>;
@@ -471,16 +383,10 @@ export interface Vault extends BaseContract {
       [BigNumber, BigNumber] & { crvPending: BigNumber; cvxPending: BigNumber }
     >;
 
-    owner(overrides?: CallOverrides): Promise<string>;
-
-    pendingOwner(overrides?: CallOverrides): Promise<string>;
-
-    renounceOwnership(overrides?: CallOverrides): Promise<void>;
-
-    transferOwnership(
-      newOwner: PromiseOrValue<string>,
+    getUserInfo(
+      user: PromiseOrValue<string>,
       overrides?: CallOverrides
-    ): Promise<void>;
+    ): Promise<Vault.UserInfoStructOutput>;
 
     userInfo(
       arg0: PromiseOrValue<string>,
@@ -520,24 +426,6 @@ export interface Vault extends BaseContract {
       amount?: null
     ): DepositEventFilter;
 
-    "OwnershipTransferStarted(address,address)"(
-      previousOwner?: PromiseOrValue<string> | null,
-      newOwner?: PromiseOrValue<string> | null
-    ): OwnershipTransferStartedEventFilter;
-    OwnershipTransferStarted(
-      previousOwner?: PromiseOrValue<string> | null,
-      newOwner?: PromiseOrValue<string> | null
-    ): OwnershipTransferStartedEventFilter;
-
-    "OwnershipTransferred(address,address)"(
-      previousOwner?: PromiseOrValue<string> | null,
-      newOwner?: PromiseOrValue<string> | null
-    ): OwnershipTransferredEventFilter;
-    OwnershipTransferred(
-      previousOwner?: PromiseOrValue<string> | null,
-      newOwner?: PromiseOrValue<string> | null
-    ): OwnershipTransferredEventFilter;
-
     "Withdraw(address,uint256)"(
       user?: PromiseOrValue<string> | null,
       amount?: null
@@ -561,10 +449,6 @@ export interface Vault extends BaseContract {
 
     PID(overrides?: CallOverrides): Promise<BigNumber>;
 
-    acceptOwnership(
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<BigNumber>;
-
     claim(
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
@@ -585,17 +469,9 @@ export interface Vault extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    owner(overrides?: CallOverrides): Promise<BigNumber>;
-
-    pendingOwner(overrides?: CallOverrides): Promise<BigNumber>;
-
-    renounceOwnership(
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<BigNumber>;
-
-    transferOwnership(
-      newOwner: PromiseOrValue<string>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    getUserInfo(
+      user: PromiseOrValue<string>,
+      overrides?: CallOverrides
     ): Promise<BigNumber>;
 
     userInfo(
@@ -622,10 +498,6 @@ export interface Vault extends BaseContract {
 
     PID(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    acceptOwnership(
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<PopulatedTransaction>;
-
     claim(
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
@@ -648,17 +520,9 @@ export interface Vault extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    pendingOwner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    renounceOwnership(
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<PopulatedTransaction>;
-
-    transferOwnership(
-      newOwner: PromiseOrValue<string>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    getUserInfo(
+      user: PromiseOrValue<string>,
+      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     userInfo(

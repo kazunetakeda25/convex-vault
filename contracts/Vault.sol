@@ -152,6 +152,8 @@ contract Vault is Ownable2Step, ReentrancyGuard {
             CVX.transfer(msg.sender, cvxPending);
         }
 
+        depositAmountTotal = depositAmountTotal - _amount;
+
         LP.transfer(msg.sender, _amount);
 
         emit Withdraw(msg.sender, _amount);
@@ -166,10 +168,10 @@ contract Vault is Ownable2Step, ReentrancyGuard {
         UserInfo storage info = userInfo[msg.sender];
 
         (uint256 crvPending, uint256 cvxPending) = getPendingRewards(info);
-
+        // Update share & pending reward
         info.crv.share = crvAmountPerShare;
         info.crv.pending = 0;
-
+        // Update share & pending reward
         info.cvx.share = cvxAmountPerShare;
         info.cvx.pending = 0;
 
@@ -232,10 +234,10 @@ contract Vault is Ownable2Step, ReentrancyGuard {
             return;
         }
 
-        BASE_REWARD_POOL.getReward();
-
         uint256 crvBalance = CRV.balanceOf(address(this));
         uint256 cvxBalance = CVX.balanceOf(address(this));
+
+        BASE_REWARD_POOL.getReward();
 
         crvBalance = CRV.balanceOf(address(this)) - crvBalance;
         if (crvBalance > 0) {

@@ -125,3 +125,34 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+.DS_Store
+
+# hardhat
+cache/
+artifacts/
+
+coverage*
+/types/
+
+.vscode/*
+!.vscode/settings.json.default
+!.vscode/launch.json.default
+!.vscode/extensions.json.default
+
+node_modules/
+.env
+yarn-error.log
+.package-lock.json
+
+.yalc
+yalc.lock
+
+contractsInfo.json
+deployments/**/solcinputs
+
+/.dapp
+
+
+# OpenZeppelin upgradeable files
+.openzeppelin/unknown-*.json
+/flatten

@@ -104,10 +104,7 @@ describe("Vault", function () {
     // });
 
     it("[Withdraw] Should Alice withdraw and reward calculated correctly", async function () {
-        const x = await vault.getPendingRewards(alice.getAddress());
-        console.log("Alice pending rewards: ", x);
-
-        await time.increase(24 * 3600);
+        await time.increase(24 * 3600 * 2);
 
         const balance = BigNumber.from(await lpToken.balanceOf(alice.getAddress()));
         console.log("Alice balance before withdraw: ", balance);
@@ -174,63 +171,26 @@ describe("Vault", function () {
     //     console.log(`Cat (CRV, CVX) rewards: (${ crvBalance }, ${ cvxBalance })`);
     // });
 
-    // it('Should calculate rewards correctly', async () => {
-    //     const pid = 0;
-    //     const amount = ethers.utils.parseEther("10");
-    //     const signerAddress = await signer.getAddress();
 
-    //     // Approve tokens
-    //     await lpToken.connect(signer).approve(vault.address, amount);
-    //     console.log("Approved LP tokens for staking");
-    //     // Deposit tokens && Stake
-    //     await vault.connect(signer).deposit(pid, amount, false, true);
-    //     console.log("Deposited into Vault and stake in the BaseRewardPool: ", ethers.utils.formatEther(amount));
+    // it('[Claim] Should claim rewards correctly', async () => {
+    //     await time.increase(24 * 3600 * 2);
 
-    //     // Get calculated rewards
-    //     const rewards = await vault.calculateRewardsEarned(signerAddress, pid);
-    //     expect(rewards[0]).to.be.equal((0));
-    //     expect(rewards[1]).to.be.equal((0));
+    //     const balance = BigNumber.from(await lpToken.balanceOf(alice.getAddress()));
+    //     console.log("Alice balance before claim: ", balance);
 
-    //     await time.increase(3600);
-    //     // Update rewards
-    //     await vault.connect(signer).getVaultRewards(pid);
+    //     const claimAmount = ethers.utils.parseEther("100");
+    //     console.log("Alice claim amount: ", claimAmount);
 
-    //     // Get updated rewards
-    //     const updatedRewards = await vault.calculateRewardsEarned(signerAddress, pid);
-    //     expect(updatedRewards[0]).to.be.not.equal(0);
-    //     expect(updatedRewards[1]).to.be.not.equal(0);
+    //     const pendingRewards = await vault.getPendingRewards(alice.getAddress());
+    //     console.log("Alice pending rewards: ", pendingRewards);
 
-    //     console.log("Confirmed rewards were genereated");
-    // });
+    //     await vault.connect(alice).withdraw(claimAmount);
 
+    //     const balanceAfterClaim = await lpToken.balanceOf(alice.getAddress());
+    //     expect(balanceAfterClaim).to.be.eq(balance.add(claimAmount));
 
-    // it('Should claim rewards correctly', async () => {
-    //     const pid = 0;
-    //     const amount = ethers.utils.parseEther("10");
-    //     const signerAddress = await signer.getAddress();
-
-    //     // Approve tokens
-    //     await lpToken.connect(signer).approve(vault.address, amount);
-    //     console.log("Approved LP tokens for staking");
-    //     // Deposit tokens && Stake
-    //     await vault.connect(signer).deposit(pid, amount, false, true);
-    //     console.log("Deposited into Vault and stake in the BaseRewardPool: ", ethers.utils.formatEther(amount));
-
-    //     // Get calculated rewards
-    //     const rewards = await vault.calculateRewardsEarned(signerAddress, pid);
-    //     expect(rewards[0]).to.be.equal((0));
-    //     expect(rewards[1]).to.be.equal((0));
-
-    //     // Increaes 1 month
-    //     await time.increase(3600 * 24 * 30);
-    //     await vault.connect(signer).getVaultRewards(pid);
-
-    //     // Claim rewards
-    //     await vault.connect(signer).claim(pid, signerAddress, true);
-    //     const crvReward = await crvToken.balanceOf(signerAddress);
-    //     const cvxReward = await cvxToken.balanceOf(signerAddress);
-
-    //     console.log("CRV Token Reward: ", ethers.utils.formatEther(crvReward));
-    //     console.log("CVX Token Reward: ", ethers.utils.formatEther(cvxReward));
+    //     const crvBalance = await crvToken.balanceOf(alice.getAddress());
+    //     const cvxBalance = await cvxToken.balanceOf(alice.getAddress());
+    //     console.log(`Alice (CRV, CVX) rewards: (${ crvBalance }, ${ cvxBalance })`);
     // });
 });

@@ -3,3 +3,4 @@
 /* eslint-disable */
 export type { IBaseRewardPool } from "./IBaseRewardPool";
 export type { IBooster } from "./IBooster";
+export type { ICVX } from "./ICVX";

@@ -41,6 +41,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IBooster__factory>;
     getContractFactory(
+      name: "ICVX",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.ICVX__factory>;
+    getContractFactory(
       name: "MockERC20",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.MockERC20__factory>;
@@ -84,6 +88,11 @@ declare module "hardhat/types/runtime" {
       address: string,
       signer?: ethers.Signer
     ): Promise<Contracts.IBooster>;
+    getContractAt(
+      name: "ICVX",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.ICVX>;
     getContractAt(
       name: "MockERC20",
       address: string,

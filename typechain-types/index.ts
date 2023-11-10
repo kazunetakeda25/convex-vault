@@ -20,6 +20,8 @@ export type { IBaseRewardPool } from "./contracts/interfaces/IBaseRewardPool";
 export { IBaseRewardPool__factory } from "./factories/contracts/interfaces/IBaseRewardPool__factory";
 export type { IBooster } from "./contracts/interfaces/IBooster";
 export { IBooster__factory } from "./factories/contracts/interfaces/IBooster__factory";
+export type { ICVX } from "./contracts/interfaces/ICVX";
+export { ICVX__factory } from "./factories/contracts/interfaces/ICVX__factory";
 export type { MockERC20 } from "./contracts/Mock/MockERC20";
 export { MockERC20__factory } from "./factories/contracts/Mock/MockERC20__factory";
 export type { Vault } from "./contracts/Vault";

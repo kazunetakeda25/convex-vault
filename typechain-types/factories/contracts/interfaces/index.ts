@@ -3,3 +3,4 @@
 /* eslint-disable */
 export { IBaseRewardPool__factory } from "./IBaseRewardPool__factory";
 export { IBooster__factory } from "./IBooster__factory";
+export { ICVX__factory } from "./ICVX__factory";

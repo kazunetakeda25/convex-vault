@@ -7,6 +7,9 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 // Convex Interfaces
 import "./interfaces/IBaseRewardPool.sol";
 import "./interfaces/IBooster.sol";
+import "./interfaces/ICVX.sol";
+// Test - Hardhat Console
+import "hardhat/console.sol";
 
 /**
  * @title Vault Contract
@@ -28,8 +31,8 @@ contract Vault is ReentrancyGuard {
 
     // State variables
 
-    IERC20 public immutable CVX;
     IERC20 public immutable CRV;
+    ICVX public immutable CVX;
     IBooster public immutable BOOSTER;
     IBaseRewardPool public immutable BASE_REWARD_POOL;
     IERC20 public LP;
@@ -66,11 +69,11 @@ contract Vault is ReentrancyGuard {
         uint256 _pid
     ) {
         CRV = IERC20(_crv);
-        CVX = IERC20(_cvx);
+        CVX = ICVX(_cvx);
         BOOSTER = IBooster(_booster);
-        BASE_REWARD_POOL = IBaseRewardPool(BOOSTER.poolInfo(_pid).crvRewards);
         LP = IERC20(_lp);
         PID = _pid;
+        BASE_REWARD_POOL = IBaseRewardPool(BOOSTER.poolInfo(_pid).crvRewards);
     }
 
     // External functions
@@ -128,7 +131,7 @@ contract Vault is ReentrancyGuard {
 
         _withdrawAndUnwrap(_amount);
 
-        (uint256 crvPending, uint256 cvxPending) = getVaultPendingRewards(info);
+        (uint256 crvPending, uint256 cvxPending) = getVaultRewards(info);
 
         if (_amount == info.amount) {
             delete userInfo[msg.sender];
@@ -143,6 +146,8 @@ contract Vault is ReentrancyGuard {
             info.cvx.pending = 0;
         }
 
+        depositAmountTotal = depositAmountTotal - _amount;
+
         if (crvPending > 0) {
             CRV.transfer(msg.sender, crvPending);
         }
@@ -150,8 +155,6 @@ contract Vault is ReentrancyGuard {
         if (cvxPending > 0) {
             CVX.transfer(msg.sender, cvxPending);
         }
-
-        depositAmountTotal = depositAmountTotal - _amount;
 
         LP.transfer(msg.sender, _amount);
 
@@ -166,7 +169,7 @@ contract Vault is ReentrancyGuard {
 
         UserInfo storage info = userInfo[msg.sender];
 
-        (uint256 crvPending, uint256 cvxPending) = getVaultPendingRewards(info);
+        (uint256 crvPending, uint256 cvxPending) = getVaultRewards(info);
         // Update share & pending reward
         info.crv.share = crvAmountPerShare;
         info.crv.pending = 0;
@@ -187,24 +190,68 @@ contract Vault is ReentrancyGuard {
 
     // External View Functions
 
-    function getTotalPendingRewards(
+    function getPendingRewards(
         address _user
     ) external view returns (uint256 crvPending, uint256 cvxPending) {
-        UserInfo memory info = userInfo[_user];
-
-        uint256 crvEarned = BASE_REWARD_POOL.earned(address(this));
-        uint256 amountPerShare;
-        if (crvEarned == 0) {
-            amountPerShare = crvAmountPerShare;
+        if (depositAmountTotal == 0) {
+            crvPending = 0;
+            cvxPending = 0;
         } else {
-            amountPerShare =
-                crvAmountPerShare +
-                ((crvEarned * MULTIPLIER) / depositAmountTotal);
+            UserInfo memory info = userInfo[_user];
+
+            uint256 crvEarned = BASE_REWARD_POOL.earned(address(this));
+            uint256 amountPerShare;
+            if (crvEarned == 0) {
+                amountPerShare = crvAmountPerShare;
+            } else {
+                amountPerShare =
+                    crvAmountPerShare +
+                    ((crvEarned * MULTIPLIER) / depositAmountTotal);
+            }
+
+            crvPending =
+                info.crv.pending +
+                (info.amount * (amountPerShare - info.crv.share)) /
+                MULTIPLIER;
+
+            uint256 cvxEarned = crvEarned;
+            uint256 supply = CVX.totalSupply();
+            uint256 reductionPerCliff = CVX.reductionPerCliff();
+            uint256 totalCliffs = CVX.totalCliffs();
+            uint256 maxSupply = 100 * 1000000 * 1e18; //100mil
+            //use current supply to gauge cliff
+            //this will cause a bit of overflow into the next cliff range
+            //but should be within reasonable levels.
+            //requires a max supply check though
+            uint256 cliff = supply / reductionPerCliff;
+            //mint if below total cliffs
+            if (cliff < totalCliffs) {
+                //for reduction% take inverse of current cliff
+                uint256 reduction = totalCliffs - cliff;
+                //reduce
+                cvxEarned = cvxEarned * reduction / totalCliffs;
+
+                //supply cap check
+                uint256 amtTillMax = maxSupply - supply;
+                if (cvxEarned > amtTillMax) {
+                    cvxEarned = amtTillMax;
+                }
+            }
+
+            uint256 updatedCvxShare;
+            if (cvxEarned == 0) {
+                updatedCvxShare = cvxAmountPerShare;
+            } else {
+                updatedCvxShare =
+                    cvxAmountPerShare +
+                    ((cvxEarned * MULTIPLIER) / depositAmountTotal);
+            }
+
+            cvxPending =
+                info.cvx.pending +
+                (info.amount * (updatedCvxShare - info.cvx.share)) /
+                MULTIPLIER;
         }
-        crvPending =
-            info.crv.pending +
-            (info.amount * (amountPerShare - info.crv.share)) /
-            MULTIPLIER;
     }
 
     // Public functions
@@ -224,7 +271,7 @@ contract Vault is ReentrancyGuard {
      * @return crvPending CRV pending rewards
      * @return cvxPending CVX pending rewards
      */
-    function getVaultPendingRewards(
+    function getVaultRewards(
         UserInfo memory info
     ) public view returns (uint256 crvPending, uint256 cvxPending) {
         crvPending = info.crv.pending;

@@ -68,8 +68,9 @@ export interface VaultInterface extends utils.Interface {
     "cvxAmountPerShare()": FunctionFragment;
     "deposit(uint256)": FunctionFragment;
     "depositAmountTotal()": FunctionFragment;
-    "getPendingRewards((uint256,(uint256,uint256),(uint256,uint256)))": FunctionFragment;
+    "getPendingRewards(address)": FunctionFragment;
     "getUserInfo(address)": FunctionFragment;
+    "getVaultRewards((uint256,(uint256,uint256),(uint256,uint256)))": FunctionFragment;
     "userInfo(address)": FunctionFragment;
     "withdraw(uint256)": FunctionFragment;
   };
@@ -89,6 +90,7 @@ export interface VaultInterface extends utils.Interface {
       | "depositAmountTotal"
       | "getPendingRewards"
       | "getUserInfo"
+      | "getVaultRewards"
       | "userInfo"
       | "withdraw"
   ): FunctionFragment;
@@ -121,11 +123,15 @@ export interface VaultInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "getPendingRewards",
-    values: [Vault.UserInfoStruct]
+    values: [PromiseOrValue<string>]
   ): string;
   encodeFunctionData(
     functionFragment: "getUserInfo",
     values: [PromiseOrValue<string>]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getVaultRewards",
+    values: [Vault.UserInfoStruct]
   ): string;
   encodeFunctionData(
     functionFragment: "userInfo",
@@ -165,6 +171,10 @@ export interface VaultInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "getUserInfo",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getVaultRewards",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "userInfo", data: BytesLike): Result;
@@ -267,7 +277,7 @@ export interface Vault extends BaseContract {
     depositAmountTotal(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     getPendingRewards(
-      info: Vault.UserInfoStruct,
+      _user: PromiseOrValue<string>,
       overrides?: CallOverrides
     ): Promise<
       [BigNumber, BigNumber] & { crvPending: BigNumber; cvxPending: BigNumber }
@@ -277,6 +287,13 @@ export interface Vault extends BaseContract {
       user: PromiseOrValue<string>,
       overrides?: CallOverrides
     ): Promise<[Vault.UserInfoStructOutput]>;
+
+    getVaultRewards(
+      info: Vault.UserInfoStruct,
+      overrides?: CallOverrides
+    ): Promise<
+      [BigNumber, BigNumber] & { crvPending: BigNumber; cvxPending: BigNumber }
+    >;
 
     userInfo(
       arg0: PromiseOrValue<string>,
@@ -323,7 +340,7 @@ export interface Vault extends BaseContract {
   depositAmountTotal(overrides?: CallOverrides): Promise<BigNumber>;
 
   getPendingRewards(
-    info: Vault.UserInfoStruct,
+    _user: PromiseOrValue<string>,
     overrides?: CallOverrides
   ): Promise<
     [BigNumber, BigNumber] & { crvPending: BigNumber; cvxPending: BigNumber }
@@ -333,6 +350,13 @@ export interface Vault extends BaseContract {
     user: PromiseOrValue<string>,
     overrides?: CallOverrides
   ): Promise<Vault.UserInfoStructOutput>;
+
+  getVaultRewards(
+    info: Vault.UserInfoStruct,
+    overrides?: CallOverrides
+  ): Promise<
+    [BigNumber, BigNumber] & { crvPending: BigNumber; cvxPending: BigNumber }
+  >;
 
   userInfo(
     arg0: PromiseOrValue<string>,
@@ -377,7 +401,7 @@ export interface Vault extends BaseContract {
     depositAmountTotal(overrides?: CallOverrides): Promise<BigNumber>;
 
     getPendingRewards(
-      info: Vault.UserInfoStruct,
+      _user: PromiseOrValue<string>,
       overrides?: CallOverrides
     ): Promise<
       [BigNumber, BigNumber] & { crvPending: BigNumber; cvxPending: BigNumber }
@@ -387,6 +411,13 @@ export interface Vault extends BaseContract {
       user: PromiseOrValue<string>,
       overrides?: CallOverrides
     ): Promise<Vault.UserInfoStructOutput>;
+
+    getVaultRewards(
+      info: Vault.UserInfoStruct,
+      overrides?: CallOverrides
+    ): Promise<
+      [BigNumber, BigNumber] & { crvPending: BigNumber; cvxPending: BigNumber }
+    >;
 
     userInfo(
       arg0: PromiseOrValue<string>,
@@ -465,12 +496,17 @@ export interface Vault extends BaseContract {
     depositAmountTotal(overrides?: CallOverrides): Promise<BigNumber>;
 
     getPendingRewards(
-      info: Vault.UserInfoStruct,
+      _user: PromiseOrValue<string>,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
     getUserInfo(
       user: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    getVaultRewards(
+      info: Vault.UserInfoStruct,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
@@ -516,12 +552,17 @@ export interface Vault extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     getPendingRewards(
-      info: Vault.UserInfoStruct,
+      _user: PromiseOrValue<string>,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     getUserInfo(
       user: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    getVaultRewards(
+      info: Vault.UserInfoStruct,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 

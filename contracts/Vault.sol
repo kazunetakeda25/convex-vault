@@ -128,7 +128,7 @@ contract Vault is ReentrancyGuard {
 
         _withdrawAndUnwrap(_amount);
 
-        (uint256 crvPending, uint256 cvxPending) = getPendingRewards(info);
+        (uint256 crvPending, uint256 cvxPending) = getVaultPendingRewards(info);
 
         if (_amount == info.amount) {
             delete userInfo[msg.sender];
@@ -166,7 +166,7 @@ contract Vault is ReentrancyGuard {
 
         UserInfo storage info = userInfo[msg.sender];
 
-        (uint256 crvPending, uint256 cvxPending) = getPendingRewards(info);
+        (uint256 crvPending, uint256 cvxPending) = getVaultPendingRewards(info);
         // Update share & pending reward
         info.crv.share = crvAmountPerShare;
         info.crv.pending = 0;
@@ -183,6 +183,28 @@ contract Vault is ReentrancyGuard {
         }
 
         emit Claim(msg.sender, crvPending, cvxPending);
+    }
+
+    // External View Functions
+
+    function getTotalPendingRewards(
+        address _user
+    ) external view returns (uint256 crvPending, uint256 cvxPending) {
+        UserInfo memory info = userInfo[_user];
+
+        uint256 crvEarned = BASE_REWARD_POOL.earned(address(this));
+        uint256 amountPerShare;
+        if (crvEarned == 0) {
+            amountPerShare = crvAmountPerShare;
+        } else {
+            amountPerShare =
+                crvAmountPerShare +
+                ((crvEarned * MULTIPLIER) / depositAmountTotal);
+        }
+        crvPending =
+            info.crv.pending +
+            (info.amount * (amountPerShare - info.crv.share)) /
+            MULTIPLIER;
     }
 
     // Public functions
@@ -202,7 +224,7 @@ contract Vault is ReentrancyGuard {
      * @return crvPending CRV pending rewards
      * @return cvxPending CVX pending rewards
      */
-    function getPendingRewards(
+    function getVaultPendingRewards(
         UserInfo memory info
     ) public view returns (uint256 crvPending, uint256 cvxPending) {
         crvPending = info.crv.pending;

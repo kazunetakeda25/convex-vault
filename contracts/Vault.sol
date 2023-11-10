@@ -200,7 +200,7 @@ contract Vault is ReentrancyGuard {
             UserInfo memory info = userInfo[_user];
 
             uint256 crvEarned = BASE_REWARD_POOL.earned(address(this));
-            
+
             uint256 amountPerShare;
             if (crvEarned == 0) {
                 amountPerShare = crvAmountPerShare;
@@ -238,8 +238,6 @@ contract Vault is ReentrancyGuard {
                     cvxEarned = amtTillMax;
                 }
             }
-
-            console.log(cvxEarned);
 
             uint256 updatedCvxShare;
             if (cvxEarned == 0) {

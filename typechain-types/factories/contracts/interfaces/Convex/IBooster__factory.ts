@@ -43,6 +43,25 @@ const _abi = [
     inputs: [
       {
         internalType: "uint256",
+        name: "_pid",
+        type: "uint256",
+      },
+    ],
+    name: "earmarkRewards",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
+      },
+    ],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
         name: "",
         type: "uint256",
       },

@@ -25,9 +25,9 @@ import type {
 
 export interface ISPoolInterface extends utils.Interface {
   functions: {
-    "add_liquidity(uint256[4],uint256)": FunctionFragment;
-    "coins(int128)": FunctionFragment;
-    "remove_liquidity(uint256,uint256[4])": FunctionFragment;
+    "add_liquidity(uint256[3],uint256)": FunctionFragment;
+    "coins(uint256)": FunctionFragment;
+    "remove_liquidity(uint256,uint256[3])": FunctionFragment;
   };
 
   getFunction(
@@ -38,7 +38,6 @@ export interface ISPoolInterface extends utils.Interface {
     functionFragment: "add_liquidity",
     values: [
       [
-        PromiseOrValue<BigNumberish>,
         PromiseOrValue<BigNumberish>,
         PromiseOrValue<BigNumberish>,
         PromiseOrValue<BigNumberish>
@@ -55,7 +54,6 @@ export interface ISPoolInterface extends utils.Interface {
     values: [
       PromiseOrValue<BigNumberish>,
       [
-        PromiseOrValue<BigNumberish>,
         PromiseOrValue<BigNumberish>,
         PromiseOrValue<BigNumberish>,
         PromiseOrValue<BigNumberish>
@@ -107,7 +105,6 @@ export interface ISPool extends BaseContract {
       amounts: [
         PromiseOrValue<BigNumberish>,
         PromiseOrValue<BigNumberish>,
-        PromiseOrValue<BigNumberish>,
         PromiseOrValue<BigNumberish>
       ],
       min_mint_amount: PromiseOrValue<BigNumberish>,
@@ -115,14 +112,13 @@ export interface ISPool extends BaseContract {
     ): Promise<ContractTransaction>;
 
     coins(
-      arg: PromiseOrValue<BigNumberish>,
+      arg0: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<[string]>;
 
     remove_liquidity(
       amount: PromiseOrValue<BigNumberish>,
       mint_amounts: [
-        PromiseOrValue<BigNumberish>,
         PromiseOrValue<BigNumberish>,
         PromiseOrValue<BigNumberish>,
         PromiseOrValue<BigNumberish>
@@ -135,7 +131,6 @@ export interface ISPool extends BaseContract {
     amounts: [
       PromiseOrValue<BigNumberish>,
       PromiseOrValue<BigNumberish>,
-      PromiseOrValue<BigNumberish>,
       PromiseOrValue<BigNumberish>
     ],
     min_mint_amount: PromiseOrValue<BigNumberish>,
@@ -143,14 +138,13 @@ export interface ISPool extends BaseContract {
   ): Promise<ContractTransaction>;
 
   coins(
-    arg: PromiseOrValue<BigNumberish>,
+    arg0: PromiseOrValue<BigNumberish>,
     overrides?: CallOverrides
   ): Promise<string>;
 
   remove_liquidity(
     amount: PromiseOrValue<BigNumberish>,
     mint_amounts: [
-      PromiseOrValue<BigNumberish>,
       PromiseOrValue<BigNumberish>,
       PromiseOrValue<BigNumberish>,
       PromiseOrValue<BigNumberish>
@@ -163,7 +157,6 @@ export interface ISPool extends BaseContract {
       amounts: [
         PromiseOrValue<BigNumberish>,
         PromiseOrValue<BigNumberish>,
-        PromiseOrValue<BigNumberish>,
         PromiseOrValue<BigNumberish>
       ],
       min_mint_amount: PromiseOrValue<BigNumberish>,
@@ -171,14 +164,13 @@ export interface ISPool extends BaseContract {
     ): Promise<void>;
 
     coins(
-      arg: PromiseOrValue<BigNumberish>,
+      arg0: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<string>;
 
     remove_liquidity(
       amount: PromiseOrValue<BigNumberish>,
       mint_amounts: [
-        PromiseOrValue<BigNumberish>,
         PromiseOrValue<BigNumberish>,
         PromiseOrValue<BigNumberish>,
         PromiseOrValue<BigNumberish>
@@ -194,7 +186,6 @@ export interface ISPool extends BaseContract {
       amounts: [
         PromiseOrValue<BigNumberish>,
         PromiseOrValue<BigNumberish>,
-        PromiseOrValue<BigNumberish>,
         PromiseOrValue<BigNumberish>
       ],
       min_mint_amount: PromiseOrValue<BigNumberish>,
@@ -202,14 +193,13 @@ export interface ISPool extends BaseContract {
     ): Promise<BigNumber>;
 
     coins(
-      arg: PromiseOrValue<BigNumberish>,
+      arg0: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
     remove_liquidity(
       amount: PromiseOrValue<BigNumberish>,
       mint_amounts: [
-        PromiseOrValue<BigNumberish>,
         PromiseOrValue<BigNumberish>,
         PromiseOrValue<BigNumberish>,
         PromiseOrValue<BigNumberish>
@@ -223,7 +213,6 @@ export interface ISPool extends BaseContract {
       amounts: [
         PromiseOrValue<BigNumberish>,
         PromiseOrValue<BigNumberish>,
-        PromiseOrValue<BigNumberish>,
         PromiseOrValue<BigNumberish>
       ],
       min_mint_amount: PromiseOrValue<BigNumberish>,
@@ -231,14 +220,13 @@ export interface ISPool extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     coins(
-      arg: PromiseOrValue<BigNumberish>,
+      arg0: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     remove_liquidity(
       amount: PromiseOrValue<BigNumberish>,
       mint_amounts: [
-        PromiseOrValue<BigNumberish>,
         PromiseOrValue<BigNumberish>,
         PromiseOrValue<BigNumberish>,
         PromiseOrValue<BigNumberish>

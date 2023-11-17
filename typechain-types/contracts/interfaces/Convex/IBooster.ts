@@ -53,12 +53,17 @@ export declare namespace IBooster {
 export interface IBoosterInterface extends utils.Interface {
   functions: {
     "deposit(uint256,uint256,bool)": FunctionFragment;
+    "earmarkRewards(uint256)": FunctionFragment;
     "poolInfo(uint256)": FunctionFragment;
     "withdraw(uint256,uint256)": FunctionFragment;
   };
 
   getFunction(
-    nameOrSignatureOrTopic: "deposit" | "poolInfo" | "withdraw"
+    nameOrSignatureOrTopic:
+      | "deposit"
+      | "earmarkRewards"
+      | "poolInfo"
+      | "withdraw"
   ): FunctionFragment;
 
   encodeFunctionData(
@@ -70,6 +75,10 @@ export interface IBoosterInterface extends utils.Interface {
     ]
   ): string;
   encodeFunctionData(
+    functionFragment: "earmarkRewards",
+    values: [PromiseOrValue<BigNumberish>]
+  ): string;
+  encodeFunctionData(
     functionFragment: "poolInfo",
     values: [PromiseOrValue<BigNumberish>]
   ): string;
@@ -79,6 +88,10 @@ export interface IBoosterInterface extends utils.Interface {
   ): string;
 
   decodeFunctionResult(functionFragment: "deposit", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "earmarkRewards",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "poolInfo", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "withdraw", data: BytesLike): Result;
 
@@ -119,6 +132,11 @@ export interface IBooster extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
+    earmarkRewards(
+      _pid: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
+
     poolInfo(
       arg0: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
@@ -138,6 +156,11 @@ export interface IBooster extends BaseContract {
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
+  earmarkRewards(
+    _pid: PromiseOrValue<BigNumberish>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
   poolInfo(
     arg0: PromiseOrValue<BigNumberish>,
     overrides?: CallOverrides
@@ -154,6 +177,11 @@ export interface IBooster extends BaseContract {
       _pid: PromiseOrValue<BigNumberish>,
       _amount: PromiseOrValue<BigNumberish>,
       _stake: PromiseOrValue<boolean>,
+      overrides?: CallOverrides
+    ): Promise<boolean>;
+
+    earmarkRewards(
+      _pid: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<boolean>;
 
@@ -179,6 +207,11 @@ export interface IBooster extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
+    earmarkRewards(
+      _pid: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+
     poolInfo(
       arg0: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
@@ -196,6 +229,11 @@ export interface IBooster extends BaseContract {
       _pid: PromiseOrValue<BigNumberish>,
       _amount: PromiseOrValue<BigNumberish>,
       _stake: PromiseOrValue<boolean>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
+    earmarkRewards(
+      _pid: PromiseOrValue<BigNumberish>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 

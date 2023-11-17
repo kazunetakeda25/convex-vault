@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 // Openzeppelin
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 // Curve Interfaces
 import "./interfaces/Curve/ISPool.sol";
@@ -21,23 +22,23 @@ import "hardhat/console.sol";
  * @dev A contract managing deposits, withdrawals, and rewards for a specific pool.
  */
 contract Vault is ReentrancyGuard, Ownable {
+    using SafeERC20 for IERC20;
+    using SafeERC20 for ICVX;
+
     // Structs
 
-    // Struct to store reward indices
     struct RewardIndex {
-        uint256 cvxIndex; // CVX Reward Index
-        uint256 crvIndex; // CRV Reward Index
+        uint256 cvxIndex;
+        uint256 crvIndex;
     }
 
-    // Struct to store rewards
     struct Reward {
         uint256 cvxEarned;
         uint256 crvEarned;
     }
 
-    // Struct to store user information
     struct UserInfo {
-        uint256 amount; // How many LP tokens the user has provided.
+        uint256 amount;
         Reward reward;
         RewardIndex rewardIndex;
     }
@@ -59,7 +60,8 @@ contract Vault is ReentrancyGuard, Ownable {
     mapping(address => bool) public underlyingAssets;
 
     uint256 private constant MULTIPLIER = 1e18;
-    IERC20 private constant WETH = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+    IERC20 private constant WETH =
+        IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
     // Events
 
@@ -138,24 +140,23 @@ contract Vault is ReentrancyGuard, Ownable {
         require(_amount != 0, "Vault: Invalid deposit amount");
 
         if (_token != address(0)) {
-            IERC20(_token).transferFrom(msg.sender, address(this), _amount);
+            IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
+        } else {
+            require(_amount == msg.value, "Vault: Invalid deposit amount");
         }
 
         uint256 lpBalanceBeforeDeposit = LP.balanceOf(address(this));
 
-        uint256[4] memory amounts;
+        uint256[3] memory amounts;
         if (CURVE_SWAP.coins(0) == _token) {
-            amounts = [_amount, 0, 0, 0];
-            IERC20(_token).approve(address(CURVE_SWAP), _amount);
+            amounts = [_amount, 0, 0];
+            IERC20(_token).safeApprove(address(CURVE_SWAP), _amount);
         } else if (CURVE_SWAP.coins(1) == _token) {
-            amounts = [0, _amount, 0, 0];
-            IERC20(_token).approve(address(CURVE_SWAP), _amount);
+            amounts = [0, _amount, 0];
+            IERC20(_token).safeApprove(address(CURVE_SWAP), _amount);
         } else if (CURVE_SWAP.coins(2) == _token) {
-            amounts = [0, 0, _amount, 0];
-            IERC20(_token).approve(address(CURVE_SWAP), _amount);
-        } else if (CURVE_SWAP.coins(3) == _token) {
-            amounts = [0, 0, 0, _amount];
-            IERC20(_token).approve(address(CURVE_SWAP), _amount);
+            amounts = [0, 0, _amount];
+            IERC20(_token).safeApprove(address(CURVE_SWAP), _amount);
         } else {
             address tokenOut = CURVE_SWAP.coins(0);
             uint256 amountIn = _token == address(0) ? msg.value : _amount;
@@ -167,8 +168,8 @@ contract Vault is ReentrancyGuard, Ownable {
             );
             require(token0Amount != 0, "Vault: Swap failed");
 
-            amounts = [token0Amount, 0, 0, 0];
-            IERC20(tokenOut).approve(address(CURVE_SWAP), token0Amount);
+            amounts = [token0Amount, 0, 0];
+            IERC20(tokenOut).safeApprove(address(CURVE_SWAP), token0Amount);
         }
 
         CURVE_SWAP.add_liquidity(amounts, 0);
@@ -185,7 +186,7 @@ contract Vault is ReentrancyGuard, Ownable {
 
         depositAmountTotal = depositAmountTotal + lpBalance;
 
-        LP.approve(address(BOOSTER), lpBalance);
+        LP.safeApprove(address(BOOSTER), lpBalance);
 
         BOOSTER.deposit(PID, lpBalance, true);
 
@@ -200,7 +201,7 @@ contract Vault is ReentrancyGuard, Ownable {
         uint256 _amount,
         bool _swapRewards,
         address _swapToken
-    ) external nonReentrant {
+    ) external {
         require(_amount != 0, "Vault: Invalid withdraw amount");
 
         UserInfo storage info = userInfo[msg.sender];
@@ -210,25 +211,25 @@ contract Vault is ReentrancyGuard, Ownable {
         BASE_REWARD_POOL.withdraw(_amount, true);
         BOOSTER.withdraw(PID, _amount);
 
-        uint256[4] memory tokenBalancesBefore;
-        uint256[4] memory tokenBalancesAfter;
-        for (uint256 i; i != 4; ++i) {
-            address token = CURVE_SWAP.coins(_convertUint256ToInt128(i));
+        claim(_swapRewards, _swapToken);
+
+        uint256[3] memory tokenBalancesBefore;
+        uint256[3] memory tokenBalancesAfter;
+        for (uint256 i; i != 3; ++i) {
+            address token = CURVE_SWAP.coins(i);
             tokenBalancesBefore[i] = IERC20(token).balanceOf(address(this));
         }
 
-        CURVE_SWAP.remove_liquidity(_amount, [uint256(0), 0, 0, 0]);
+        CURVE_SWAP.remove_liquidity(_amount, [uint256(0), 0, 0]);
 
-        for (uint256 i; i != 4; ++i) {
-            address token = CURVE_SWAP.coins(_convertUint256ToInt128(i));
+        for (uint256 i; i != 3; ++i) {
+            address token = CURVE_SWAP.coins(i);
             tokenBalancesAfter[i] = IERC20(token).balanceOf(address(this));
             uint256 amount = tokenBalancesAfter[i] - tokenBalancesBefore[i];
             if (amount != 0) {
-                IERC20(token).transfer(msg.sender, amount);
+                IERC20(token).safeTransfer(msg.sender, amount);
             }
         }
-
-        claim(_swapRewards, _swapToken);
 
         // Decrease withdraw amount
         info.amount -= _amount;
@@ -283,16 +284,16 @@ contract Vault is ReentrancyGuard, Ownable {
 
         if (crvReward != 0) {
             if (_swapRewards) {
-                uint256 swapTokenAmount = _swapExactInputSingleHop(
+                uint256 swapTokenAmount = _swapExactInputMultiHop(
                     address(CRV),
                     _swapToken,
                     3000,
                     crvReward
                 );
                 require(swapTokenAmount != 0, "Vault: Swap failed");
-                IERC20(_swapToken).transfer(msg.sender, swapTokenAmount);
+                IERC20(_swapToken).safeTransfer(msg.sender, swapTokenAmount);
             } else {
-                CRV.transfer(msg.sender, crvReward);
+                CRV.safeTransfer(msg.sender, crvReward);
             }
 
             info.reward.crvEarned = 0;
@@ -300,16 +301,16 @@ contract Vault is ReentrancyGuard, Ownable {
 
         if (cvxReward != 0) {
             if (_swapRewards) {
-                uint256 swapTokenAmount = _swapExactInputSingleHop(
+                uint256 swapTokenAmount = _swapExactInputMultiHop(
                     address(CVX),
                     _swapToken,
                     3000,
                     cvxReward
                 );
                 require(swapTokenAmount != 0, "Vault: Swap failed");
-                IERC20(_swapToken).transfer(msg.sender, swapTokenAmount);
+                IERC20(_swapToken).safeTransfer(msg.sender, swapTokenAmount);
             } else {
-                CVX.transfer(msg.sender, cvxReward);
+                CVX.safeTransfer(msg.sender, cvxReward);
             }
 
             info.reward.cvxEarned = 0;
@@ -319,20 +320,6 @@ contract Vault is ReentrancyGuard, Ownable {
     }
 
     // Private functions
-
-    function _convertUint256ToInt128(
-        uint256 value
-    ) private pure returns (int128) {
-        // Ensure the sign bit is correctly interpreted
-        int128 result = int128(int256(value));
-
-        // Use bitwise operations to set the sign bit
-        if (value & (1 << 255) != 0) {
-            result |= int128(1) << 127;
-        }
-
-        return result;
-    }
 
     /**
      * @dev Internal function to get rewards and update share values.
@@ -393,7 +380,7 @@ contract Vault is ReentrancyGuard, Ownable {
         uint amountIn
     ) internal returns (uint256 amountOut) {
         if (tokenIn != address(0)) {
-            IERC20(tokenIn).approve(address(SWAP_ROUTER), amountIn);
+            IERC20(tokenIn).safeApprove(address(SWAP_ROUTER), amountIn);
         }
 
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
@@ -413,5 +400,37 @@ contract Vault is ReentrancyGuard, Ownable {
         } else {
             amountOut = SWAP_ROUTER.exactInputSingle(params);
         }
+    }
+
+    function _swapExactInputMultiHop(
+        address tokenIn,
+        address tokenOut,
+        uint24 poolFee,
+        uint amountIn
+    ) internal returns (uint256 amountOut) {
+        IERC20(tokenIn).safeApprove(address(SWAP_ROUTER), amountIn);
+
+        bytes memory path = abi.encodePacked(
+            tokenIn,
+            poolFee,
+            WETH,
+            poolFee,
+            tokenOut
+        );
+
+        if (IERC20(tokenIn) == WETH) {
+            path = abi.encodePacked(tokenIn, uint24(3000), tokenOut);
+        }
+
+        ISwapRouter.ExactInputParams memory params = ISwapRouter
+            .ExactInputParams({
+                path: path,
+                recipient: address(this),
+                deadline: block.timestamp,
+                amountIn: amountIn,
+                amountOutMinimum: 0
+            });
+
+        amountOut = SWAP_ROUTER.exactInput(params);
     }
 }

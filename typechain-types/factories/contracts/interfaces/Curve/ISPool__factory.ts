@@ -13,9 +13,9 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "uint256[4]",
+        internalType: "uint256[3]",
         name: "amounts",
-        type: "uint256[4]",
+        type: "uint256[3]",
       },
       {
         internalType: "uint256",
@@ -31,9 +31,9 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "int128",
-        name: "arg",
-        type: "int128",
+        internalType: "uint256",
+        name: "arg0",
+        type: "uint256",
       },
     ],
     name: "coins",
@@ -55,9 +55,9 @@ const _abi = [
         type: "uint256",
       },
       {
-        internalType: "uint256[4]",
+        internalType: "uint256[3]",
         name: "mint_amounts",
-        type: "uint256[4]",
+        type: "uint256[3]",
       },
     ],
     name: "remove_liquidity",

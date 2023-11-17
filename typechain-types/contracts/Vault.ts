@@ -29,29 +29,23 @@ import type {
 
 export declare namespace Vault {
   export type RewardStruct = {
-    share: PromiseOrValue<BigNumberish>;
-    pending: PromiseOrValue<BigNumberish>;
+    cvxEarned: PromiseOrValue<BigNumberish>;
+    crvEarned: PromiseOrValue<BigNumberish>;
   };
 
   export type RewardStructOutput = [BigNumber, BigNumber] & {
-    share: BigNumber;
-    pending: BigNumber;
+    cvxEarned: BigNumber;
+    crvEarned: BigNumber;
   };
 
-  export type UserInfoStruct = {
-    amount: PromiseOrValue<BigNumberish>;
-    crv: Vault.RewardStruct;
-    cvx: Vault.RewardStruct;
+  export type RewardIndexStruct = {
+    cvxIndex: PromiseOrValue<BigNumberish>;
+    crvIndex: PromiseOrValue<BigNumberish>;
   };
 
-  export type UserInfoStructOutput = [
-    BigNumber,
-    Vault.RewardStructOutput,
-    Vault.RewardStructOutput
-  ] & {
-    amount: BigNumber;
-    crv: Vault.RewardStructOutput;
-    cvx: Vault.RewardStructOutput;
+  export type RewardIndexStructOutput = [BigNumber, BigNumber] & {
+    cvxIndex: BigNumber;
+    crvIndex: BigNumber;
   };
 }
 
@@ -67,15 +61,13 @@ export interface VaultInterface extends utils.Interface {
     "SWAP_ROUTER()": FunctionFragment;
     "addUnderlyingAsset(address)": FunctionFragment;
     "claim(bool,address)": FunctionFragment;
-    "crvAmountPerShare()": FunctionFragment;
-    "cvxAmountPerShare()": FunctionFragment;
     "deposit(address,uint256)": FunctionFragment;
     "depositAmountTotal()": FunctionFragment;
-    "getPendingRewards(address)": FunctionFragment;
-    "getVaultRewards((uint256,(uint256,uint256),(uint256,uint256)))": FunctionFragment;
+    "getVaultReward(address)": FunctionFragment;
     "owner()": FunctionFragment;
     "removeUnderlyingAsset(address)": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
+    "rewardIndex()": FunctionFragment;
     "transferOwnership(address)": FunctionFragment;
     "underlyingAssets(address)": FunctionFragment;
     "userInfo(address)": FunctionFragment;
@@ -94,15 +86,13 @@ export interface VaultInterface extends utils.Interface {
       | "SWAP_ROUTER"
       | "addUnderlyingAsset"
       | "claim"
-      | "crvAmountPerShare"
-      | "cvxAmountPerShare"
       | "deposit"
       | "depositAmountTotal"
-      | "getPendingRewards"
-      | "getVaultRewards"
+      | "getVaultReward"
       | "owner"
       | "removeUnderlyingAsset"
       | "renounceOwnership"
+      | "rewardIndex"
       | "transferOwnership"
       | "underlyingAssets"
       | "userInfo"
@@ -135,14 +125,6 @@ export interface VaultInterface extends utils.Interface {
     values: [PromiseOrValue<boolean>, PromiseOrValue<string>]
   ): string;
   encodeFunctionData(
-    functionFragment: "crvAmountPerShare",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "cvxAmountPerShare",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
     functionFragment: "deposit",
     values: [PromiseOrValue<string>, PromiseOrValue<BigNumberish>]
   ): string;
@@ -151,12 +133,8 @@ export interface VaultInterface extends utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "getPendingRewards",
+    functionFragment: "getVaultReward",
     values: [PromiseOrValue<string>]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getVaultRewards",
-    values: [Vault.UserInfoStruct]
   ): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
   encodeFunctionData(
@@ -165,6 +143,10 @@ export interface VaultInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "renounceOwnership",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "rewardIndex",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -207,25 +189,13 @@ export interface VaultInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "claim", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "crvAmountPerShare",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "cvxAmountPerShare",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "deposit", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "depositAmountTotal",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "getPendingRewards",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getVaultRewards",
+    functionFragment: "getVaultReward",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
@@ -235,6 +205,10 @@ export interface VaultInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "renounceOwnership",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "rewardIndex",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -384,10 +358,6 @@ export interface Vault extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
-    crvAmountPerShare(overrides?: CallOverrides): Promise<[BigNumber]>;
-
-    cvxAmountPerShare(overrides?: CallOverrides): Promise<[BigNumber]>;
-
     deposit(
       _token: PromiseOrValue<string>,
       _amount: PromiseOrValue<BigNumberish>,
@@ -396,18 +366,11 @@ export interface Vault extends BaseContract {
 
     depositAmountTotal(overrides?: CallOverrides): Promise<[BigNumber]>;
 
-    getPendingRewards(
+    getVaultReward(
       _user: PromiseOrValue<string>,
       overrides?: CallOverrides
     ): Promise<
-      [BigNumber, BigNumber] & { crvPending: BigNumber; cvxPending: BigNumber }
-    >;
-
-    getVaultRewards(
-      info: Vault.UserInfoStruct,
-      overrides?: CallOverrides
-    ): Promise<
-      [BigNumber, BigNumber] & { crvPending: BigNumber; cvxPending: BigNumber }
+      [BigNumber, BigNumber] & { crvReward: BigNumber; cvxReward: BigNumber }
     >;
 
     owner(overrides?: CallOverrides): Promise<[string]>;
@@ -420,6 +383,12 @@ export interface Vault extends BaseContract {
     renounceOwnership(
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
+
+    rewardIndex(
+      overrides?: CallOverrides
+    ): Promise<
+      [BigNumber, BigNumber] & { cvxIndex: BigNumber; crvIndex: BigNumber }
+    >;
 
     transferOwnership(
       newOwner: PromiseOrValue<string>,
@@ -435,10 +404,10 @@ export interface Vault extends BaseContract {
       arg0: PromiseOrValue<string>,
       overrides?: CallOverrides
     ): Promise<
-      [BigNumber, Vault.RewardStructOutput, Vault.RewardStructOutput] & {
+      [BigNumber, Vault.RewardStructOutput, Vault.RewardIndexStructOutput] & {
         amount: BigNumber;
-        crv: Vault.RewardStructOutput;
-        cvx: Vault.RewardStructOutput;
+        reward: Vault.RewardStructOutput;
+        rewardIndex: Vault.RewardIndexStructOutput;
       }
     >;
 
@@ -477,10 +446,6 @@ export interface Vault extends BaseContract {
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
-  crvAmountPerShare(overrides?: CallOverrides): Promise<BigNumber>;
-
-  cvxAmountPerShare(overrides?: CallOverrides): Promise<BigNumber>;
-
   deposit(
     _token: PromiseOrValue<string>,
     _amount: PromiseOrValue<BigNumberish>,
@@ -489,18 +454,11 @@ export interface Vault extends BaseContract {
 
   depositAmountTotal(overrides?: CallOverrides): Promise<BigNumber>;
 
-  getPendingRewards(
+  getVaultReward(
     _user: PromiseOrValue<string>,
     overrides?: CallOverrides
   ): Promise<
-    [BigNumber, BigNumber] & { crvPending: BigNumber; cvxPending: BigNumber }
-  >;
-
-  getVaultRewards(
-    info: Vault.UserInfoStruct,
-    overrides?: CallOverrides
-  ): Promise<
-    [BigNumber, BigNumber] & { crvPending: BigNumber; cvxPending: BigNumber }
+    [BigNumber, BigNumber] & { crvReward: BigNumber; cvxReward: BigNumber }
   >;
 
   owner(overrides?: CallOverrides): Promise<string>;
@@ -513,6 +471,12 @@ export interface Vault extends BaseContract {
   renounceOwnership(
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
+
+  rewardIndex(
+    overrides?: CallOverrides
+  ): Promise<
+    [BigNumber, BigNumber] & { cvxIndex: BigNumber; crvIndex: BigNumber }
+  >;
 
   transferOwnership(
     newOwner: PromiseOrValue<string>,
@@ -528,10 +492,10 @@ export interface Vault extends BaseContract {
     arg0: PromiseOrValue<string>,
     overrides?: CallOverrides
   ): Promise<
-    [BigNumber, Vault.RewardStructOutput, Vault.RewardStructOutput] & {
+    [BigNumber, Vault.RewardStructOutput, Vault.RewardIndexStructOutput] & {
       amount: BigNumber;
-      crv: Vault.RewardStructOutput;
-      cvx: Vault.RewardStructOutput;
+      reward: Vault.RewardStructOutput;
+      rewardIndex: Vault.RewardIndexStructOutput;
     }
   >;
 
@@ -570,10 +534,6 @@ export interface Vault extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    crvAmountPerShare(overrides?: CallOverrides): Promise<BigNumber>;
-
-    cvxAmountPerShare(overrides?: CallOverrides): Promise<BigNumber>;
-
     deposit(
       _token: PromiseOrValue<string>,
       _amount: PromiseOrValue<BigNumberish>,
@@ -582,18 +542,11 @@ export interface Vault extends BaseContract {
 
     depositAmountTotal(overrides?: CallOverrides): Promise<BigNumber>;
 
-    getPendingRewards(
+    getVaultReward(
       _user: PromiseOrValue<string>,
       overrides?: CallOverrides
     ): Promise<
-      [BigNumber, BigNumber] & { crvPending: BigNumber; cvxPending: BigNumber }
-    >;
-
-    getVaultRewards(
-      info: Vault.UserInfoStruct,
-      overrides?: CallOverrides
-    ): Promise<
-      [BigNumber, BigNumber] & { crvPending: BigNumber; cvxPending: BigNumber }
+      [BigNumber, BigNumber] & { crvReward: BigNumber; cvxReward: BigNumber }
     >;
 
     owner(overrides?: CallOverrides): Promise<string>;
@@ -604,6 +557,12 @@ export interface Vault extends BaseContract {
     ): Promise<void>;
 
     renounceOwnership(overrides?: CallOverrides): Promise<void>;
+
+    rewardIndex(
+      overrides?: CallOverrides
+    ): Promise<
+      [BigNumber, BigNumber] & { cvxIndex: BigNumber; crvIndex: BigNumber }
+    >;
 
     transferOwnership(
       newOwner: PromiseOrValue<string>,
@@ -619,10 +578,10 @@ export interface Vault extends BaseContract {
       arg0: PromiseOrValue<string>,
       overrides?: CallOverrides
     ): Promise<
-      [BigNumber, Vault.RewardStructOutput, Vault.RewardStructOutput] & {
+      [BigNumber, Vault.RewardStructOutput, Vault.RewardIndexStructOutput] & {
         amount: BigNumber;
-        crv: Vault.RewardStructOutput;
-        cvx: Vault.RewardStructOutput;
+        reward: Vault.RewardStructOutput;
+        rewardIndex: Vault.RewardIndexStructOutput;
       }
     >;
 
@@ -716,10 +675,6 @@ export interface Vault extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
-    crvAmountPerShare(overrides?: CallOverrides): Promise<BigNumber>;
-
-    cvxAmountPerShare(overrides?: CallOverrides): Promise<BigNumber>;
-
     deposit(
       _token: PromiseOrValue<string>,
       _amount: PromiseOrValue<BigNumberish>,
@@ -728,13 +683,8 @@ export interface Vault extends BaseContract {
 
     depositAmountTotal(overrides?: CallOverrides): Promise<BigNumber>;
 
-    getPendingRewards(
+    getVaultReward(
       _user: PromiseOrValue<string>,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    getVaultRewards(
-      info: Vault.UserInfoStruct,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
@@ -748,6 +698,8 @@ export interface Vault extends BaseContract {
     renounceOwnership(
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
+
+    rewardIndex(overrides?: CallOverrides): Promise<BigNumber>;
 
     transferOwnership(
       newOwner: PromiseOrValue<string>,
@@ -800,10 +752,6 @@ export interface Vault extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 
-    crvAmountPerShare(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    cvxAmountPerShare(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
     deposit(
       _token: PromiseOrValue<string>,
       _amount: PromiseOrValue<BigNumberish>,
@@ -814,13 +762,8 @@ export interface Vault extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    getPendingRewards(
+    getVaultReward(
       _user: PromiseOrValue<string>,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    getVaultRewards(
-      info: Vault.UserInfoStruct,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
@@ -834,6 +777,8 @@ export interface Vault extends BaseContract {
     renounceOwnership(
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
+
+    rewardIndex(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     transferOwnership(
       newOwner: PromiseOrValue<string>,

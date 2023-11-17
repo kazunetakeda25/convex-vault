@@ -32,6 +32,7 @@ export interface ICVXInterface extends utils.Interface {
     "allowance(address,address)": FunctionFragment;
     "approve(address,uint256)": FunctionFragment;
     "balanceOf(address)": FunctionFragment;
+    "maxSupply()": FunctionFragment;
     "reductionPerCliff()": FunctionFragment;
     "totalCliffs()": FunctionFragment;
     "totalSupply()": FunctionFragment;
@@ -44,6 +45,7 @@ export interface ICVXInterface extends utils.Interface {
       | "allowance"
       | "approve"
       | "balanceOf"
+      | "maxSupply"
       | "reductionPerCliff"
       | "totalCliffs"
       | "totalSupply"
@@ -63,6 +65,7 @@ export interface ICVXInterface extends utils.Interface {
     functionFragment: "balanceOf",
     values: [PromiseOrValue<string>]
   ): string;
+  encodeFunctionData(functionFragment: "maxSupply", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "reductionPerCliff",
     values?: undefined
@@ -91,6 +94,7 @@ export interface ICVXInterface extends utils.Interface {
   decodeFunctionResult(functionFragment: "allowance", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "approve", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "balanceOf", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "maxSupply", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "reductionPerCliff",
     data: BytesLike
@@ -186,6 +190,8 @@ export interface ICVX extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[BigNumber]>;
 
+    maxSupply(overrides?: CallOverrides): Promise<[BigNumber]>;
+
     reductionPerCliff(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     totalCliffs(overrides?: CallOverrides): Promise<[BigNumber]>;
@@ -223,6 +229,8 @@ export interface ICVX extends BaseContract {
     overrides?: CallOverrides
   ): Promise<BigNumber>;
 
+  maxSupply(overrides?: CallOverrides): Promise<BigNumber>;
+
   reductionPerCliff(overrides?: CallOverrides): Promise<BigNumber>;
 
   totalCliffs(overrides?: CallOverrides): Promise<BigNumber>;
@@ -259,6 +267,8 @@ export interface ICVX extends BaseContract {
       account: PromiseOrValue<string>,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
+
+    maxSupply(overrides?: CallOverrides): Promise<BigNumber>;
 
     reductionPerCliff(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -322,6 +332,8 @@ export interface ICVX extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
+    maxSupply(overrides?: CallOverrides): Promise<BigNumber>;
+
     reductionPerCliff(overrides?: CallOverrides): Promise<BigNumber>;
 
     totalCliffs(overrides?: CallOverrides): Promise<BigNumber>;
@@ -359,6 +371,8 @@ export interface ICVX extends BaseContract {
       account: PromiseOrValue<string>,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
+
+    maxSupply(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     reductionPerCliff(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 

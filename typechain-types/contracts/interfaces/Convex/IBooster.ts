@@ -54,9 +54,12 @@ export interface IBoosterInterface extends utils.Interface {
   functions: {
     "deposit(uint256,uint256,bool)": FunctionFragment;
     "poolInfo(uint256)": FunctionFragment;
+    "withdraw(uint256,uint256)": FunctionFragment;
   };
 
-  getFunction(nameOrSignatureOrTopic: "deposit" | "poolInfo"): FunctionFragment;
+  getFunction(
+    nameOrSignatureOrTopic: "deposit" | "poolInfo" | "withdraw"
+  ): FunctionFragment;
 
   encodeFunctionData(
     functionFragment: "deposit",
@@ -70,9 +73,14 @@ export interface IBoosterInterface extends utils.Interface {
     functionFragment: "poolInfo",
     values: [PromiseOrValue<BigNumberish>]
   ): string;
+  encodeFunctionData(
+    functionFragment: "withdraw",
+    values: [PromiseOrValue<BigNumberish>, PromiseOrValue<BigNumberish>]
+  ): string;
 
   decodeFunctionResult(functionFragment: "deposit", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "poolInfo", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "withdraw", data: BytesLike): Result;
 
   events: {};
 }
@@ -115,6 +123,12 @@ export interface IBooster extends BaseContract {
       arg0: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<[IBooster.PoolInfoStructOutput]>;
+
+    withdraw(
+      _pid: PromiseOrValue<BigNumberish>,
+      _amount: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
   };
 
   deposit(
@@ -129,6 +143,12 @@ export interface IBooster extends BaseContract {
     overrides?: CallOverrides
   ): Promise<IBooster.PoolInfoStructOutput>;
 
+  withdraw(
+    _pid: PromiseOrValue<BigNumberish>,
+    _amount: PromiseOrValue<BigNumberish>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
   callStatic: {
     deposit(
       _pid: PromiseOrValue<BigNumberish>,
@@ -141,6 +161,12 @@ export interface IBooster extends BaseContract {
       arg0: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<IBooster.PoolInfoStructOutput>;
+
+    withdraw(
+      _pid: PromiseOrValue<BigNumberish>,
+      _amount: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
+    ): Promise<boolean>;
   };
 
   filters: {};
@@ -157,6 +183,12 @@ export interface IBooster extends BaseContract {
       arg0: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
+
+    withdraw(
+      _pid: PromiseOrValue<BigNumberish>,
+      _amount: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
   };
 
   populateTransaction: {
@@ -170,6 +202,12 @@ export interface IBooster extends BaseContract {
     poolInfo(
       arg0: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    withdraw(
+      _pid: PromiseOrValue<BigNumberish>,
+      _amount: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
   };
 }

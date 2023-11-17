@@ -27,11 +27,11 @@ export interface IBaseRewardPoolInterface extends utils.Interface {
   functions: {
     "earned(address)": FunctionFragment;
     "getReward()": FunctionFragment;
-    "withdrawAndUnwrap(uint256,bool)": FunctionFragment;
+    "withdraw(uint256,bool)": FunctionFragment;
   };
 
   getFunction(
-    nameOrSignatureOrTopic: "earned" | "getReward" | "withdrawAndUnwrap"
+    nameOrSignatureOrTopic: "earned" | "getReward" | "withdraw"
   ): FunctionFragment;
 
   encodeFunctionData(
@@ -40,16 +40,13 @@ export interface IBaseRewardPoolInterface extends utils.Interface {
   ): string;
   encodeFunctionData(functionFragment: "getReward", values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "withdrawAndUnwrap",
+    functionFragment: "withdraw",
     values: [PromiseOrValue<BigNumberish>, PromiseOrValue<boolean>]
   ): string;
 
   decodeFunctionResult(functionFragment: "earned", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "getReward", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "withdrawAndUnwrap",
-    data: BytesLike
-  ): Result;
+  decodeFunctionResult(functionFragment: "withdraw", data: BytesLike): Result;
 
   events: {};
 }
@@ -90,7 +87,7 @@ export interface IBaseRewardPool extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
-    withdrawAndUnwrap(
+    withdraw(
       amount: PromiseOrValue<BigNumberish>,
       claim: PromiseOrValue<boolean>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
@@ -106,7 +103,7 @@ export interface IBaseRewardPool extends BaseContract {
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
-  withdrawAndUnwrap(
+  withdraw(
     amount: PromiseOrValue<BigNumberish>,
     claim: PromiseOrValue<boolean>,
     overrides?: Overrides & { from?: PromiseOrValue<string> }
@@ -120,7 +117,7 @@ export interface IBaseRewardPool extends BaseContract {
 
     getReward(overrides?: CallOverrides): Promise<boolean>;
 
-    withdrawAndUnwrap(
+    withdraw(
       amount: PromiseOrValue<BigNumberish>,
       claim: PromiseOrValue<boolean>,
       overrides?: CallOverrides
@@ -139,7 +136,7 @@ export interface IBaseRewardPool extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
-    withdrawAndUnwrap(
+    withdraw(
       amount: PromiseOrValue<BigNumberish>,
       claim: PromiseOrValue<boolean>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
@@ -156,7 +153,7 @@ export interface IBaseRewardPool extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 
-    withdrawAndUnwrap(
+    withdraw(
       amount: PromiseOrValue<BigNumberish>,
       claim: PromiseOrValue<boolean>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }

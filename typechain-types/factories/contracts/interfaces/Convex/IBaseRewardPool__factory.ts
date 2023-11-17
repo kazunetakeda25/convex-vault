@@ -55,7 +55,7 @@ const _abi = [
         type: "bool",
       },
     ],
-    name: "withdrawAndUnwrap",
+    name: "withdraw",
     outputs: [
       {
         internalType: "bool",

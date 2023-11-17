@@ -23,15 +23,23 @@ import "hardhat/console.sol";
 contract Vault is ReentrancyGuard, Ownable {
     // Structs
 
-    struct Reward {
-        uint256 share;
-        uint256 pending;
+    // Struct to store reward indices
+    struct RewardIndex {
+        uint256 cvxIndex; // CVX Reward Index
+        uint256 crvIndex; // CRV Reward Index
     }
 
+    // Struct to store rewards
+    struct Reward {
+        uint256 cvxEarned;
+        uint256 crvEarned;
+    }
+
+    // Struct to store user information
     struct UserInfo {
-        uint256 amount;
-        Reward crv;
-        Reward cvx;
+        uint256 amount; // How many LP tokens the user has provided.
+        Reward reward;
+        RewardIndex rewardIndex;
     }
 
     // State variables
@@ -46,8 +54,7 @@ contract Vault is ReentrancyGuard, Ownable {
     uint256 public immutable PID;
 
     uint256 public depositAmountTotal;
-    uint256 public crvAmountPerShare;
-    uint256 public cvxAmountPerShare;
+    RewardIndex public rewardIndex;
     mapping(address => UserInfo) public userInfo;
     mapping(address => bool) public underlyingAssets;
 
@@ -84,6 +91,26 @@ contract Vault is ReentrancyGuard, Ownable {
         PID = _pid;
     }
 
+    // Modifiers
+
+    modifier _updateRewards(address _user) {
+        _getReward();
+
+        UserInfo storage info = userInfo[_user];
+
+        uint cvxReward = (info.amount *
+            (rewardIndex.cvxIndex - info.rewardIndex.cvxIndex)) / MULTIPLIER;
+        uint crvReward = (info.amount *
+            (rewardIndex.crvIndex - info.rewardIndex.crvIndex)) / MULTIPLIER;
+
+        info.reward.crvEarned += crvReward;
+        info.reward.cvxEarned += cvxReward;
+
+        info.rewardIndex = rewardIndex;
+
+        _;
+    }
+
     // External functions
 
     function addUnderlyingAsset(address _token) external onlyOwner {
@@ -102,31 +129,10 @@ contract Vault is ReentrancyGuard, Ownable {
         emit UnderlyingAssetsRemoved(_token);
     }
 
-    function _swapExactInputSingleHop(
-        address tokenIn,
-        address tokenOut,
-        uint24 poolFee,
-        uint amountIn
-    ) private returns (uint amountOut) {
-        IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
-        IERC20(tokenIn).approve(address(SWAP_ROUTER), amountIn);
-
-        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
-            .ExactInputSingleParams({
-                tokenIn: tokenIn,
-                tokenOut: tokenOut,
-                fee: poolFee,
-                recipient: address(this),
-                deadline: block.timestamp,
-                amountIn: amountIn,
-                amountOutMinimum: 0,
-                sqrtPriceLimitX96: 0
-            });
-
-        amountOut = SWAP_ROUTER.exactInputSingle(params);
-    }
-
-    function deposit(address _token, uint256 _amount) external nonReentrant {
+    function deposit(
+        address _token,
+        uint256 _amount
+    ) external nonReentrant _updateRewards(msg.sender) {
         require(underlyingAssets[_token], "Vault: Invalid underlying asset");
         require(_amount > 0, "Vault: Invalid deposit amount");
 
@@ -168,33 +174,16 @@ contract Vault is ReentrancyGuard, Ownable {
         uint256 lpBalance = lpBalanceAfterDeposit - lpBalanceBeforeDeposit;
         require(lpBalance > 0, "Vault: Curve deposit failed");
 
-        _getReward();
-
         UserInfo storage info = userInfo[msg.sender];
 
-        if (crvAmountPerShare > info.crv.share) {
-            // Update share & pending reward
-            info.crv.share = crvAmountPerShare;
-            info.crv.pending +=
-                (info.amount * (crvAmountPerShare - info.crv.share)) /
-                MULTIPLIER;
-        }
-
-        if (cvxAmountPerShare > info.cvx.share) {
-            // Update share & pending reward
-            info.cvx.share = cvxAmountPerShare;
-            info.cvx.pending +=
-                (info.amount * (cvxAmountPerShare - info.cvx.share)) /
-                MULTIPLIER;
-        }
         // Increase deposit amount
-        info.amount += _amount;
+        info.amount += lpBalance;
 
-        depositAmountTotal = depositAmountTotal + _amount;
+        depositAmountTotal = depositAmountTotal + lpBalance;
 
-        LP.approve(address(BOOSTER), _amount);
+        LP.approve(address(BOOSTER), lpBalance);
 
-        BOOSTER.deposit(PID, _amount, true);
+        BOOSTER.deposit(PID, lpBalance, true);
 
         emit Deposit(msg.sender, _amount);
     }
@@ -209,6 +198,9 @@ contract Vault is ReentrancyGuard, Ownable {
         UserInfo storage info = userInfo[msg.sender];
 
         require(_amount <= info.amount, "Vault: Invalid withdraw amount");
+
+        BASE_REWARD_POOL.withdraw(_amount, true);
+        BOOSTER.withdraw(PID, _amount);
 
         uint256[4] memory tokenBalancesBefore;
         uint256[4] memory tokenBalancesAfter;
@@ -228,203 +220,94 @@ contract Vault is ReentrancyGuard, Ownable {
             }
         }
 
-        _withdrawAndUnwrap(_amount);
+        claim(_swapRewards, _swapToken);
 
-        (uint256 crvPending, uint256 cvxPending) = getVaultRewards(info);
-
-        if (_amount == info.amount) {
-            delete userInfo[msg.sender];
-        } else {
-            // Update share & pending reward
-            info.crv.share = crvAmountPerShare;
-            info.crv.pending = 0;
-            // Update share & pending reward
-            info.cvx.share = cvxAmountPerShare;
-            info.cvx.pending = 0;
-            // Decrease withdraw amount
-            info.amount -= _amount;
-        }
+        // Decrease withdraw amount
+        info.amount -= _amount;
 
         depositAmountTotal = depositAmountTotal - _amount;
-
-        if (crvPending > 0) {
-            if (_swapRewards) {
-                uint256 swapTokenAmount = _swapExactInputSingleHop(
-                    address(CRV),
-                    _swapToken,
-                    3000,
-                    crvPending
-                );
-                require(swapTokenAmount > 0, "Vault: Swap failed");
-                IERC20(_swapToken).transfer(msg.sender, swapTokenAmount);
-            } else {
-                CRV.transfer(msg.sender, crvPending);
-            }
-        }
-
-        if (cvxPending > 0) {
-            if (_swapRewards) {
-                uint256 swapTokenAmount = _swapExactInputSingleHop(
-                    address(CVX),
-                    _swapToken,
-                    3000,
-                    cvxPending
-                );
-                require(swapTokenAmount > 0, "Vault: Swap failed");
-                IERC20(_swapToken).transfer(msg.sender, swapTokenAmount);
-            } else {
-                CVX.transfer(msg.sender, cvxPending);
-            }
-        }
 
         emit Withdraw(msg.sender, _amount);
     }
 
-    /**
-     * @notice Allows users to claim pending rewards.
-     */
-    function claim(
-        bool _swapRewards,
-        address _swapToken
-    ) external nonReentrant {
-        _getReward();
-
-        UserInfo storage info = userInfo[msg.sender];
-
-        (uint256 crvPending, uint256 cvxPending) = getVaultRewards(info);
-        // Update share & pending reward
-        info.crv.share = crvAmountPerShare;
-        info.crv.pending = 0;
-        // Update share & pending reward
-        info.cvx.share = cvxAmountPerShare;
-        info.cvx.pending = 0;
-
-        if (crvPending > 0) {
-            if (_swapRewards) {
-                uint256 swapTokenAmount = _swapExactInputSingleHop(
-                    address(CRV),
-                    _swapToken,
-                    3000,
-                    crvPending
-                );
-                require(swapTokenAmount > 0, "Vault: Swap failed");
-                IERC20(_swapToken).transfer(msg.sender, swapTokenAmount);
-            } else {
-                CRV.transfer(msg.sender, crvPending);
-            }
-        }
-
-        if (cvxPending > 0) {
-            if (_swapRewards) {
-                uint256 swapTokenAmount = _swapExactInputSingleHop(
-                    address(CVX),
-                    _swapToken,
-                    3000,
-                    cvxPending
-                );
-                require(swapTokenAmount > 0, "Vault: Swap failed");
-                IERC20(_swapToken).transfer(msg.sender, swapTokenAmount);
-            } else {
-                CVX.transfer(msg.sender, cvxPending);
-            }
-        }
-
-        emit Claim(msg.sender, crvPending, cvxPending);
-    }
-
     // External View Functions
 
-    function getPendingRewards(
+    function getVaultReward(
         address _user
-    ) external view returns (uint256 crvPending, uint256 cvxPending) {
-        if (depositAmountTotal == 0) {
-            crvPending = 0;
-            cvxPending = 0;
-        } else {
-            UserInfo memory info = userInfo[_user];
+    ) external view returns (uint256 crvReward, uint256 cvxReward) {
+        UserInfo memory info = userInfo[_user];
 
-            uint256 crvEarned = BASE_REWARD_POOL.earned(address(this));
+        uint256 pendingCrvReward = BASE_REWARD_POOL.earned(address(this));
+        uint256 pendingCvxReward = _getCvxReward(pendingCrvReward);
 
-            uint256 amountPerShare;
-            if (crvEarned == 0) {
-                amountPerShare = crvAmountPerShare;
-            } else {
-                amountPerShare =
-                    crvAmountPerShare +
-                    ((crvEarned * MULTIPLIER) / depositAmountTotal);
-            }
+        if (depositAmountTotal != 0) {
+            uint256 newCvxIndex = rewardIndex.cvxIndex +
+                (pendingCvxReward * MULTIPLIER) /
+                depositAmountTotal;
+            uint256 newCrvIndex = rewardIndex.crvIndex +
+                (pendingCrvReward * MULTIPLIER) /
+                depositAmountTotal;
 
-            crvPending =
-                info.crv.pending +
-                (info.amount * (amountPerShare - info.crv.share)) /
+            cvxReward =
+                (info.amount * (newCvxIndex - info.rewardIndex.cvxIndex)) /
+                MULTIPLIER;
+            crvReward =
+                (info.amount * (newCrvIndex - info.rewardIndex.crvIndex)) /
                 MULTIPLIER;
 
-            uint256 cvxEarned = crvEarned;
-            uint256 supply = CVX.totalSupply();
-            uint256 reductionPerCliff = CVX.reductionPerCliff();
-            uint256 totalCliffs = CVX.totalCliffs();
-            uint256 maxSupply = 100 * 1000000 * 1e18; //100mil
-            //use current supply to gauge cliff
-            //this will cause a bit of overflow into the next cliff range
-            //but should be within reasonable levels.
-            //requires a max supply check though
-            uint256 cliff = supply / reductionPerCliff;
-            //mint if below total cliffs
-            if (cliff < totalCliffs) {
-                //for reduction% take inverse of current cliff
-                uint256 reduction = totalCliffs - cliff;
-                //reduce
-                cvxEarned = (cvxEarned * reduction) / totalCliffs;
+            Reward memory rewardEarned = userInfo[_user].reward;
 
-                //supply cap check
-                uint256 amtTillMax = maxSupply - supply;
-                if (cvxEarned > amtTillMax) {
-                    cvxEarned = amtTillMax;
-                }
-            }
-
-            uint256 updatedCvxShare;
-            if (cvxEarned == 0) {
-                updatedCvxShare = cvxAmountPerShare;
-            } else {
-                updatedCvxShare =
-                    cvxAmountPerShare +
-                    ((cvxEarned * MULTIPLIER) / depositAmountTotal);
-            }
-
-            cvxPending =
-                info.cvx.pending +
-                (info.amount * (updatedCvxShare - info.cvx.share)) /
-                MULTIPLIER;
+            crvReward = crvReward + rewardEarned.crvEarned;
+            cvxReward = cvxReward + rewardEarned.cvxEarned;
         }
     }
 
     // Public functions
 
-    /**
-     * @notice Get pending rewards for a user.
-     * @param info User's information
-     * @return crvPending CRV pending rewards
-     * @return cvxPending CVX pending rewards
-     */
-    function getVaultRewards(
-        UserInfo memory info
-    ) public view returns (uint256 crvPending, uint256 cvxPending) {
-        crvPending = info.crv.pending;
-        if (crvAmountPerShare > info.crv.share) {
-            crvPending =
-                crvPending +
-                (info.amount * (crvAmountPerShare - info.crv.share)) /
-                MULTIPLIER;
+    function claim(
+        bool _swapRewards,
+        address _swapToken
+    ) public nonReentrant _updateRewards(msg.sender) {
+        UserInfo storage info = userInfo[msg.sender];
+
+        uint256 crvReward = info.reward.crvEarned;
+        uint256 cvxReward = info.reward.cvxEarned;
+
+        if (crvReward > 0) {
+            if (_swapRewards) {
+                uint256 swapTokenAmount = _swapExactInputSingleHop(
+                    address(CRV),
+                    _swapToken,
+                    3000,
+                    crvReward
+                );
+                require(swapTokenAmount > 0, "Vault: Swap failed");
+                IERC20(_swapToken).transfer(msg.sender, swapTokenAmount);
+            } else {
+                CRV.transfer(msg.sender, crvReward);
+            }
+
+            info.reward.crvEarned = 0;
         }
 
-        cvxPending = info.cvx.pending;
-        if (cvxAmountPerShare > info.cvx.share) {
-            cvxPending =
-                cvxPending +
-                (info.amount * (cvxAmountPerShare - info.cvx.share)) /
-                MULTIPLIER;
+        if (cvxReward > 0) {
+            if (_swapRewards) {
+                uint256 swapTokenAmount = _swapExactInputSingleHop(
+                    address(CVX),
+                    _swapToken,
+                    3000,
+                    cvxReward
+                );
+                require(swapTokenAmount > 0, "Vault: Swap failed");
+                IERC20(_swapToken).transfer(msg.sender, swapTokenAmount);
+            } else {
+                CVX.transfer(msg.sender, cvxReward);
+            }
+
+            info.reward.cvxEarned = 0;
         }
+
+        emit Claim(msg.sender, crvReward, cvxReward);
     }
 
     // Private functions
@@ -447,62 +330,75 @@ contract Vault is ReentrancyGuard, Ownable {
      * @dev Internal function to get rewards and update share values.
      */
     function _getReward() private {
-        // Divide by zero check
-        if (depositAmountTotal == 0) {
-            return;
-        }
-
         uint256 crvBalance = CRV.balanceOf(address(this));
         uint256 cvxBalance = CVX.balanceOf(address(this));
 
         BASE_REWARD_POOL.getReward();
 
-        crvBalance = CRV.balanceOf(address(this)) - crvBalance;
-        if (crvBalance > 0) {
-            crvAmountPerShare =
-                crvAmountPerShare +
-                (crvBalance * MULTIPLIER) /
+        uint256 updatedCrvBalance = CRV.balanceOf(address(this));
+        uint256 updatedCvxBalance = CVX.balanceOf(address(this));
+
+        if (updatedCrvBalance > crvBalance && depositAmountTotal > 0) {
+            rewardIndex.crvIndex +=
+                ((updatedCrvBalance - crvBalance) * MULTIPLIER) /
                 depositAmountTotal;
         }
 
-        cvxBalance = CVX.balanceOf(address(this)) - cvxBalance;
-        if (cvxBalance > 0) {
-            cvxAmountPerShare =
-                cvxAmountPerShare +
-                (cvxBalance * MULTIPLIER) /
+        if (updatedCvxBalance > cvxBalance && depositAmountTotal > 0) {
+            rewardIndex.cvxIndex +=
+                ((updatedCvxBalance - cvxBalance) * MULTIPLIER) /
                 depositAmountTotal;
         }
     }
 
-    /**
-     * @dev Internal function to withdraw and update share values.
-     * @param _amount The amount to withdraw
-     */
-    function _withdrawAndUnwrap(uint256 _amount) private {
-        // Divide by zero check
-        if (depositAmountTotal == 0) {
-            return;
+    function _getCvxReward(
+        uint256 _crvAmount
+    ) private view returns (uint256 cvxReward) {
+        uint256 supply = CVX.totalSupply();
+        uint256 reductionPerCliff = CVX.reductionPerCliff();
+        uint256 totalCliffs = CVX.totalCliffs();
+        //use current supply to gauge cliff
+        //this will cause a bit of overflow into the next cliff range
+        //but should be within reasonable levels.
+        //requires a max supply check though
+        uint256 cliff = supply / reductionPerCliff;
+        uint256 maxSupply = CVX.maxSupply();
+        //mint if below total cliffs
+        if (cliff < totalCliffs) {
+            //for reduction% take inverse of current cliff
+            uint256 reduction = totalCliffs - cliff;
+            //reduce
+            cvxReward = (_crvAmount * reduction) / totalCliffs;
+
+            //supply cap check
+            uint256 amtTillMax = maxSupply - supply;
+            if (cvxReward > amtTillMax) {
+                cvxReward = amtTillMax;
+            }
         }
+    }
 
-        uint256 crvBalance = CRV.balanceOf(address(this));
-        uint256 cvxBalance = CVX.balanceOf(address(this));
+    function _swapExactInputSingleHop(
+        address tokenIn,
+        address tokenOut,
+        uint24 poolFee,
+        uint amountIn
+    ) private returns (uint amountOut) {
+        IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
+        IERC20(tokenIn).approve(address(SWAP_ROUTER), amountIn);
 
-        BASE_REWARD_POOL.withdrawAndUnwrap(_amount, true);
+        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
+            .ExactInputSingleParams({
+                tokenIn: tokenIn,
+                tokenOut: tokenOut,
+                fee: poolFee,
+                recipient: address(this),
+                deadline: block.timestamp,
+                amountIn: amountIn,
+                amountOutMinimum: 0,
+                sqrtPriceLimitX96: 0
+            });
 
-        crvBalance = CRV.balanceOf(address(this)) - crvBalance;
-        if (crvBalance > 0) {
-            crvAmountPerShare =
-                crvAmountPerShare +
-                (crvBalance * MULTIPLIER) /
-                depositAmountTotal;
-        }
-
-        cvxBalance = CVX.balanceOf(address(this)) - cvxBalance;
-        if (cvxBalance > 0) {
-            cvxAmountPerShare =
-                cvxAmountPerShare +
-                (cvxBalance * MULTIPLIER) /
-                depositAmountTotal;
-        }
+        amountOut = SWAP_ROUTER.exactInputSingle(params);
     }
 }

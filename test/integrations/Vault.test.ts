@@ -153,7 +153,7 @@ describe("Vault", function () {
     });
 
     it('[Deposit] Should Bob deposit 1 WETH and swap WETH for DAI from Uniswap V3', async () => {
-        // Should owner able to add WETH as underyling asset
+       // Should owner able to add WETH as underyling asset
         await vault.connect(signer).addUnderlyingAsset(wethToken.address);
 
         const depositAmount = ethers.utils.parseUnits("1", 18);

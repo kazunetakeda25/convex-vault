@@ -160,12 +160,7 @@ contract Vault is ReentrancyGuard, Ownable {
         } else {
             address tokenOut = CURVE_SWAP.coins(0);
             uint256 amountIn = _token == address(0) ? msg.value : _amount;
-            uint256 token0Amount = _swapExactInputSingleHop(
-                _token,
-                tokenOut,
-                3000,
-                amountIn
-            );
+            uint256 token0Amount = _swapTokens(_token, tokenOut, amountIn);
             require(token0Amount != 0, "Vault: Swap failed");
 
             amounts = [token0Amount, 0, 0];
@@ -284,10 +279,9 @@ contract Vault is ReentrancyGuard, Ownable {
 
         if (crvReward != 0) {
             if (_swapRewards) {
-                uint256 swapTokenAmount = _swapExactInputMultiHop(
+                uint256 swapTokenAmount = _swapTokens(
                     address(CRV),
                     _swapToken,
-                    3000,
                     crvReward
                 );
                 require(swapTokenAmount != 0, "Vault: Swap failed");
@@ -301,10 +295,9 @@ contract Vault is ReentrancyGuard, Ownable {
 
         if (cvxReward != 0) {
             if (_swapRewards) {
-                uint256 swapTokenAmount = _swapExactInputMultiHop(
+                uint256 swapTokenAmount = _swapTokens(
                     address(CVX),
                     _swapToken,
-                    3000,
                     cvxReward
                 );
                 require(swapTokenAmount != 0, "Vault: Swap failed");
@@ -373,66 +366,38 @@ contract Vault is ReentrancyGuard, Ownable {
         }
     }
 
-    function _swapExactInputSingleHop(
+    function _swapTokens(
         address tokenIn,
         address tokenOut,
-        uint24 poolFee,
         uint amountIn
-    ) internal returns (uint256 amountOut) {
+    ) private returns (uint amountOut) {
         if (tokenIn != address(0)) {
-            IERC20(tokenIn).safeApprove(address(SWAP_ROUTER), 0);
-            IERC20(tokenIn).safeApprove(address(SWAP_ROUTER), amountIn);
+            IERC20(tokenIn).approve(address(SWAP_ROUTER), amountIn);
         }
-
-        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
-            .ExactInputSingleParams({
-                tokenIn: tokenIn == address(0) ? address(WETH) : tokenIn,
-                tokenOut: tokenOut == address(0) ? address(WETH) : tokenOut,
-                fee: uint24(poolFee),
-                recipient: address(this),
-                deadline: block.timestamp,
-                amountIn: amountIn,
-                amountOutMinimum: 0,
-                sqrtPriceLimitX96: 0
-            });
-
-        amountOut = SWAP_ROUTER.exactInputSingle{
-            value: tokenIn == address(0) ? amountIn : 0
-        }(params);
-    }
-
-    function _swapExactInputMultiHop(
-        address tokenIn,
-        address tokenOut,
-        uint24 poolFee,
-        uint amountIn
-    ) internal returns (uint256 amountOut) {
-        if (tokenIn != address(0)) {
-            IERC20(tokenIn).safeApprove(address(SWAP_ROUTER), 0);
-            IERC20(tokenIn).safeApprove(address(SWAP_ROUTER), amountIn);
-        }
-
-        if (
-            tokenIn == address(0) ||
-            tokenIn == address(WETH) ||
-            tokenOut == address(0) ||
-            tokenOut == address(WETH)
-        ) {
-            amountOut = _swapExactInputSingleHop(
-                tokenIn,
-                tokenOut,
-                poolFee,
-                amountIn
-            );
+        address inputToken = tokenIn == address(0) ? address(WETH) : tokenIn;
+        bytes memory path = abi.encodePacked(
+            inputToken,
+            uint24(3000),
+            WETH,
+            uint24(3000),
+            tokenOut
+        );
+        if (tokenIn == address(WETH) || tokenIn == address(0)) {
+            ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
+                .ExactInputSingleParams({
+                    tokenIn: inputToken,
+                    tokenOut: tokenOut,
+                    fee: 3000,
+                    recipient: address(this),
+                    deadline: block.timestamp,
+                    amountIn: amountIn,
+                    amountOutMinimum: 0,
+                    sqrtPriceLimitX96: 0
+                });
+            amountOut = SWAP_ROUTER.exactInputSingle{
+                value: tokenIn == address(0) ? amountIn : 0
+            }(params);
         } else {
-            bytes memory path = abi.encodePacked(
-                tokenIn,
-                uint24(poolFee),
-                WETH,
-                uint24(poolFee),
-                tokenOut
-            );
-
             ISwapRouter.ExactInputParams memory params = ISwapRouter
                 .ExactInputParams({
                     path: path,
@@ -441,8 +406,9 @@ contract Vault is ReentrancyGuard, Ownable {
                     amountIn: amountIn,
                     amountOutMinimum: 0
                 });
-
-            amountOut = SWAP_ROUTER.exactInput(params);
+            amountOut = SWAP_ROUTER.exactInput{
+                value: tokenIn == address(0) ? amountIn : 0
+            }(params);
         }
     }
 }

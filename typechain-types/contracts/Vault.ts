@@ -9,6 +9,7 @@ import type {
   CallOverrides,
   ContractTransaction,
   Overrides,
+  PayableOverrides,
   PopulatedTransaction,
   Signer,
   utils,
@@ -224,7 +225,7 @@ export interface VaultInterface extends utils.Interface {
 
   events: {
     "Claim(address,uint256,uint256)": EventFragment;
-    "Deposit(address,uint256)": EventFragment;
+    "Deposit(address,address,uint256)": EventFragment;
     "OwnershipTransferred(address,address)": EventFragment;
     "UnderlyingAssetsAdded(address)": EventFragment;
     "UnderlyingAssetsRemoved(address)": EventFragment;
@@ -253,9 +254,13 @@ export type ClaimEventFilter = TypedEventFilter<ClaimEvent>;
 
 export interface DepositEventObject {
   user: string;
+  token: string;
   amount: BigNumber;
 }
-export type DepositEvent = TypedEvent<[string, BigNumber], DepositEventObject>;
+export type DepositEvent = TypedEvent<
+  [string, string, BigNumber],
+  DepositEventObject
+>;
 
 export type DepositEventFilter = TypedEventFilter<DepositEvent>;
 
@@ -361,7 +366,7 @@ export interface Vault extends BaseContract {
     deposit(
       _token: PromiseOrValue<string>,
       _amount: PromiseOrValue<BigNumberish>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
+      overrides?: PayableOverrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
     depositAmountTotal(overrides?: CallOverrides): Promise<[BigNumber]>;
@@ -449,7 +454,7 @@ export interface Vault extends BaseContract {
   deposit(
     _token: PromiseOrValue<string>,
     _amount: PromiseOrValue<BigNumberish>,
-    overrides?: Overrides & { from?: PromiseOrValue<string> }
+    overrides?: PayableOverrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
   depositAmountTotal(overrides?: CallOverrides): Promise<BigNumber>;
@@ -605,12 +610,14 @@ export interface Vault extends BaseContract {
       cvxReward?: null
     ): ClaimEventFilter;
 
-    "Deposit(address,uint256)"(
+    "Deposit(address,address,uint256)"(
       user?: PromiseOrValue<string> | null,
+      token?: PromiseOrValue<string> | null,
       amount?: null
     ): DepositEventFilter;
     Deposit(
       user?: PromiseOrValue<string> | null,
+      token?: PromiseOrValue<string> | null,
       amount?: null
     ): DepositEventFilter;
 
@@ -678,7 +685,7 @@ export interface Vault extends BaseContract {
     deposit(
       _token: PromiseOrValue<string>,
       _amount: PromiseOrValue<BigNumberish>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
+      overrides?: PayableOverrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
     depositAmountTotal(overrides?: CallOverrides): Promise<BigNumber>;
@@ -755,7 +762,7 @@ export interface Vault extends BaseContract {
     deposit(
       _token: PromiseOrValue<string>,
       _amount: PromiseOrValue<BigNumberish>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
+      overrides?: PayableOverrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 
     depositAmountTotal(

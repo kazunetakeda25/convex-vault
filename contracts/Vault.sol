@@ -372,7 +372,7 @@ contract Vault is ReentrancyGuard, Ownable {
         uint amountIn
     ) private returns (uint amountOut) {
         if (tokenIn != address(0)) {
-            IERC20(tokenIn).approve(address(SWAP_ROUTER), amountIn);
+            IERC20(tokenIn).safeApprove(address(SWAP_ROUTER), amountIn);
         }
         address inputToken = tokenIn == address(0) ? address(WETH) : tokenIn;
         bytes memory path = abi.encodePacked(

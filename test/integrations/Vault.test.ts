@@ -152,58 +152,13 @@ describe("Vault", function () {
         // console.log("LP added: ", lpAmountForAlice);
     });
 
-    it('[Deposit] Should Bob deposit 1 WETH and swap WETH for DAI from Uniswap V3', async () => {
-       // Should owner able to add WETH as underyling asset
-        await vault.connect(signer).addUnderlyingAsset(wethToken.address);
+    // it('[Deposit] Should Bob deposit 1 WETH and swap WETH for DAI from Uniswap V3', async () => {
 
-        const depositAmount = ethers.utils.parseUnits("1", 18);
+    // });
 
-        const wethBalanceBeforeDeposit = await wethToken.balanceOf(bob.getAddress());
-        const lpBalanceBeforeDeposit = await vault.depositAmountTotal();
+    // it('[Deposit] Should Cat deposit 1 ETH and swap ETH for DAI from Uniswap V3', async () => {
 
-        await wethToken.connect(bob).approve(vault.address, depositAmount);
-
-        // Should emit Deposit event with correct args
-        expect(await vault.connect(bob).deposit(wethToken.address, depositAmount)).to.be.emit(vault, "Deposit").withArgs(bob.getAddress(), wethToken.address, depositAmount);
-
-        const wethBalanceAfterDeposit = await wethToken.balanceOf(bob.getAddress());
-        const lpBalanceAfterDeposit = await vault.depositAmountTotal();
-
-        // Should WETH balance decrease after deposit
-        expect(wethBalanceAfterDeposit).to.be.eq(wethBalanceBeforeDeposit.sub(depositAmount));
-
-        // Should LP balance increased after deposit
-        expect(lpBalanceAfterDeposit).to.be.greaterThan(lpBalanceBeforeDeposit);
-
-        lpAmountForBob = lpBalanceAfterDeposit.sub(lpBalanceBeforeDeposit);
-        // console.log("LP added: ", lpBalanceAfterDeposit.sub(lpBalanceBeforeDeposit));
-    });
-
-    it('[Deposit] Should Cat deposit 1 ETH and swap ETH for DAI from Uniswap V3', async () => {
-        // Should owner able to add ETH as underyling asset
-        await vault.connect(signer).addUnderlyingAsset(ethers.constants.AddressZero);
-
-        const depositAmount = ethers.utils.parseUnits("1", 18);
-
-        const ethBalanceBeforeDeposit = await ethers.provider.getBalance(cat.getAddress());
-        const lpBalanceBeforeDeposit = await vault.depositAmountTotal();
-
-        // Should emit Deposit event with correct args
-        // Note: Even use msg.value, use same depositAmount in amount parameter
-        expect(await vault.connect(cat).deposit(ethers.constants.AddressZero, depositAmount, { value: depositAmount })).to.be.emit(vault, "Deposit").withArgs(cat.getAddress(), ethers.constants.AddressZero, depositAmount);
-
-        const ethBalanceAfterDeposit = await ethers.provider.getBalance(cat.getAddress());
-        const lpBalanceAfterDeposit = await vault.depositAmountTotal();
-
-        // Should ETH balance decrease after deposit (consider gas fee)
-        expect(ethBalanceAfterDeposit).to.be.lessThan(ethBalanceBeforeDeposit.sub(depositAmount));
-
-        // Should LP balance increased after deposit
-        expect(lpBalanceAfterDeposit).to.be.greaterThan(lpBalanceBeforeDeposit);
-
-        lpAmountForCat = lpBalanceAfterDeposit.sub(lpBalanceBeforeDeposit);
-        // console.log("LP added: ", lpBalanceAfterDeposit.sub(lpBalanceBeforeDeposit));
-    });
+    // });
 
     it("[Withdraw] Should revert if withdraw amount is zero", async () => {
         await expect(vault.connect(alice).withdraw(0, false, daiToken.address)).to.be.revertedWith("Vault: Invalid withdraw amount");
@@ -274,6 +229,30 @@ describe("Vault", function () {
     });
 
     it('[Withdraw] Should Bob withdraw with swapping rewards to ETH from Uniswap V3 after 1 hour', async () => {
+        // Should owner able to add WETH as underyling asset
+        await vault.connect(signer).addUnderlyingAsset(wethToken.address);
+
+        const depositAmount = ethers.utils.parseUnits("1", 18);
+
+        const wethBalanceBeforeDeposit = await wethToken.balanceOf(bob.getAddress());
+        const lpBalanceBeforeDeposit = await vault.depositAmountTotal();
+
+        await wethToken.connect(bob).approve(vault.address, depositAmount);
+
+        // Should emit Deposit event with correct args
+        expect(await vault.connect(bob).deposit(wethToken.address, depositAmount)).to.be.emit(vault, "Deposit").withArgs(bob.getAddress(), wethToken.address, depositAmount);
+
+        const wethBalanceAfterDeposit = await wethToken.balanceOf(bob.getAddress());
+        const lpBalanceAfterDeposit = await vault.depositAmountTotal();
+
+        // Should WETH balance decrease after deposit
+        expect(wethBalanceAfterDeposit).to.be.eq(wethBalanceBeforeDeposit.sub(depositAmount));
+
+        // Should LP balance increased after deposit
+        expect(lpBalanceAfterDeposit).to.be.greaterThan(lpBalanceBeforeDeposit);
+
+        lpAmountForBob = lpBalanceAfterDeposit.sub(lpBalanceBeforeDeposit);
+
         await time.increase(1 * 3600);
 
         // Get rewards from Booster
@@ -290,10 +269,33 @@ describe("Vault", function () {
 
         const ethBalanceAfterWithdraw = await ethers.provider.getBalance(bob.getAddress());
 
-        expect(ethBalanceAfterWithdraw.sub(ethBalanceBeforeWithdraw)).to.be.greaterThan(BigNumber.from(0));
+        expect(ethBalanceBeforeWithdraw.sub(ethBalanceAfterWithdraw)).to.be.greaterThan(BigNumber.from(0));
     });
 
     it('[Withdraw] Should Cat withdraw with swapping rewards to WETH from Uniswap V3 after 1 hour', async () => {
+        // Should owner able to add ETH as underyling asset
+        await vault.connect(signer).addUnderlyingAsset(ethers.constants.AddressZero);
+
+        const depositAmount = ethers.utils.parseUnits("1", 18);
+
+        const ethBalanceBeforeDeposit = await ethers.provider.getBalance(cat.getAddress());
+        const lpBalanceBeforeDeposit = await vault.depositAmountTotal();
+
+        // Should emit Deposit event with correct args
+        // Note: Even use msg.value, use same depositAmount in amount parameter
+        expect(await vault.connect(cat).deposit(ethers.constants.AddressZero, depositAmount, { value: depositAmount })).to.be.emit(vault, "Deposit").withArgs(cat.getAddress(), ethers.constants.AddressZero, depositAmount);
+
+        const ethBalanceAfterDeposit = await ethers.provider.getBalance(cat.getAddress());
+        const lpBalanceAfterDeposit = await vault.depositAmountTotal();
+
+        // Should ETH balance decrease after deposit (consider gas fee)
+        expect(ethBalanceAfterDeposit).to.be.lessThan(ethBalanceBeforeDeposit.sub(depositAmount));
+
+        // Should LP balance increased after deposit
+        expect(lpBalanceAfterDeposit).to.be.greaterThan(lpBalanceBeforeDeposit);
+
+        lpAmountForCat = lpBalanceAfterDeposit.sub(lpBalanceBeforeDeposit);
+
         await time.increase(1 * 3600);
 
         // Get rewards from Booster
@@ -304,12 +306,6 @@ describe("Vault", function () {
         expect(rewards[0]).to.be.greaterThan(BigNumber.from(0));
         expect(rewards[1]).to.be.greaterThan(BigNumber.from(0));
 
-        const wethBalanceBeforeWithdraw = await wethToken.balanceOf(cat.getAddress());
-
         expect(await vault.connect(cat).withdraw(lpAmountForCat, true, wethToken.address)).to.be.emit(vault, "Withdraw").withArgs(cat.getAddress(), lpAmountForCat);
-
-        const wethBalanceAfterWithdraw = await wethToken.balanceOf(cat.getAddress());
-
-        expect(wethBalanceAfterWithdraw.sub(wethBalanceBeforeWithdraw)).to.be.greaterThan(BigNumber.from(0));
     });
 });

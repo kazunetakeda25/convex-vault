@@ -153,11 +153,11 @@ describe("Vault", function () {
     });
 
     // it('[Deposit] Should Bob deposit 1 WETH and swap WETH for DAI from Uniswap V3', async () => {
-
+        // Moved to withdraw
     // });
 
     // it('[Deposit] Should Cat deposit 1 ETH and swap ETH for DAI from Uniswap V3', async () => {
-
+        // Moved to withdraw
     // });
 
     it("[Withdraw] Should revert if withdraw amount is zero", async () => {

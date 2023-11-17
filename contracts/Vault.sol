@@ -115,7 +115,7 @@ contract Vault is ReentrancyGuard, Ownable {
     // External functions
 
     function addUnderlyingAsset(address _token) external onlyOwner {
-        require(!underlyingAssets[_token], "Vault: Invalid underlying asset");
+        require(!underlyingAssets[_token], "Vault: Already added");
 
         underlyingAssets[_token] = true;
 
@@ -123,7 +123,7 @@ contract Vault is ReentrancyGuard, Ownable {
     }
 
     function removeUnderlyingAsset(address _token) external onlyOwner {
-        require(underlyingAssets[_token], "Vault: Invalid underlying asset");
+        require(underlyingAssets[_token], "Vault: Already removed");
 
         delete underlyingAssets[_token];
 
@@ -201,7 +201,7 @@ contract Vault is ReentrancyGuard, Ownable {
         bool _swapRewards,
         address _swapToken
     ) external nonReentrant {
-        require(_amount != 0, "Vault: Invalid deposit amount");
+        require(_amount != 0, "Vault: Invalid withdraw amount");
 
         UserInfo storage info = userInfo[msg.sender];
 

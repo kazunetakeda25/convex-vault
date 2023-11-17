@@ -60,19 +60,26 @@ export interface VaultInterface extends utils.Interface {
     "BASE_REWARD_POOL()": FunctionFragment;
     "BOOSTER()": FunctionFragment;
     "CRV()": FunctionFragment;
+    "CURVE_SWAP()": FunctionFragment;
     "CVX()": FunctionFragment;
     "LP()": FunctionFragment;
     "PID()": FunctionFragment;
-    "claim()": FunctionFragment;
+    "SWAP_ROUTER()": FunctionFragment;
+    "addUnderlyingAsset(address)": FunctionFragment;
+    "claim(bool,address)": FunctionFragment;
     "crvAmountPerShare()": FunctionFragment;
     "cvxAmountPerShare()": FunctionFragment;
-    "deposit(uint256)": FunctionFragment;
+    "deposit(address,uint256)": FunctionFragment;
     "depositAmountTotal()": FunctionFragment;
     "getPendingRewards(address)": FunctionFragment;
-    "getUserInfo(address)": FunctionFragment;
     "getVaultRewards((uint256,(uint256,uint256),(uint256,uint256)))": FunctionFragment;
+    "owner()": FunctionFragment;
+    "removeUnderlyingAsset(address)": FunctionFragment;
+    "renounceOwnership()": FunctionFragment;
+    "transferOwnership(address)": FunctionFragment;
+    "underlyingAssets(address)": FunctionFragment;
     "userInfo(address)": FunctionFragment;
-    "withdraw(uint256)": FunctionFragment;
+    "withdraw(uint256,bool,address)": FunctionFragment;
   };
 
   getFunction(
@@ -80,17 +87,24 @@ export interface VaultInterface extends utils.Interface {
       | "BASE_REWARD_POOL"
       | "BOOSTER"
       | "CRV"
+      | "CURVE_SWAP"
       | "CVX"
       | "LP"
       | "PID"
+      | "SWAP_ROUTER"
+      | "addUnderlyingAsset"
       | "claim"
       | "crvAmountPerShare"
       | "cvxAmountPerShare"
       | "deposit"
       | "depositAmountTotal"
       | "getPendingRewards"
-      | "getUserInfo"
       | "getVaultRewards"
+      | "owner"
+      | "removeUnderlyingAsset"
+      | "renounceOwnership"
+      | "transferOwnership"
+      | "underlyingAssets"
       | "userInfo"
       | "withdraw"
   ): FunctionFragment;
@@ -101,10 +115,25 @@ export interface VaultInterface extends utils.Interface {
   ): string;
   encodeFunctionData(functionFragment: "BOOSTER", values?: undefined): string;
   encodeFunctionData(functionFragment: "CRV", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "CURVE_SWAP",
+    values?: undefined
+  ): string;
   encodeFunctionData(functionFragment: "CVX", values?: undefined): string;
   encodeFunctionData(functionFragment: "LP", values?: undefined): string;
   encodeFunctionData(functionFragment: "PID", values?: undefined): string;
-  encodeFunctionData(functionFragment: "claim", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "SWAP_ROUTER",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "addUnderlyingAsset",
+    values: [PromiseOrValue<string>]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "claim",
+    values: [PromiseOrValue<boolean>, PromiseOrValue<string>]
+  ): string;
   encodeFunctionData(
     functionFragment: "crvAmountPerShare",
     values?: undefined
@@ -115,7 +144,7 @@ export interface VaultInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "deposit",
-    values: [PromiseOrValue<BigNumberish>]
+    values: [PromiseOrValue<string>, PromiseOrValue<BigNumberish>]
   ): string;
   encodeFunctionData(
     functionFragment: "depositAmountTotal",
@@ -126,12 +155,25 @@ export interface VaultInterface extends utils.Interface {
     values: [PromiseOrValue<string>]
   ): string;
   encodeFunctionData(
-    functionFragment: "getUserInfo",
+    functionFragment: "getVaultRewards",
+    values: [Vault.UserInfoStruct]
+  ): string;
+  encodeFunctionData(functionFragment: "owner", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "removeUnderlyingAsset",
     values: [PromiseOrValue<string>]
   ): string;
   encodeFunctionData(
-    functionFragment: "getVaultRewards",
-    values: [Vault.UserInfoStruct]
+    functionFragment: "renounceOwnership",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "transferOwnership",
+    values: [PromiseOrValue<string>]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "underlyingAssets",
+    values: [PromiseOrValue<string>]
   ): string;
   encodeFunctionData(
     functionFragment: "userInfo",
@@ -139,7 +181,11 @@ export interface VaultInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "withdraw",
-    values: [PromiseOrValue<BigNumberish>]
+    values: [
+      PromiseOrValue<BigNumberish>,
+      PromiseOrValue<boolean>,
+      PromiseOrValue<string>
+    ]
   ): string;
 
   decodeFunctionResult(
@@ -148,9 +194,18 @@ export interface VaultInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "BOOSTER", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "CRV", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "CURVE_SWAP", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "CVX", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "LP", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "PID", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "SWAP_ROUTER",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "addUnderlyingAsset",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "claim", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "crvAmountPerShare",
@@ -170,11 +225,24 @@ export interface VaultInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "getUserInfo",
+    functionFragment: "getVaultRewards",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "removeUnderlyingAsset",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "getVaultRewards",
+    functionFragment: "renounceOwnership",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "transferOwnership",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "underlyingAssets",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "userInfo", data: BytesLike): Result;
@@ -183,11 +251,17 @@ export interface VaultInterface extends utils.Interface {
   events: {
     "Claim(address,uint256,uint256)": EventFragment;
     "Deposit(address,uint256)": EventFragment;
+    "OwnershipTransferred(address,address)": EventFragment;
+    "UnderlyingAssetsAdded(address)": EventFragment;
+    "UnderlyingAssetsRemoved(address)": EventFragment;
     "Withdraw(address,uint256)": EventFragment;
   };
 
   getEvent(nameOrSignatureOrTopic: "Claim"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Deposit"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "UnderlyingAssetsAdded"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "UnderlyingAssetsRemoved"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Withdraw"): EventFragment;
 }
 
@@ -210,6 +284,40 @@ export interface DepositEventObject {
 export type DepositEvent = TypedEvent<[string, BigNumber], DepositEventObject>;
 
 export type DepositEventFilter = TypedEventFilter<DepositEvent>;
+
+export interface OwnershipTransferredEventObject {
+  previousOwner: string;
+  newOwner: string;
+}
+export type OwnershipTransferredEvent = TypedEvent<
+  [string, string],
+  OwnershipTransferredEventObject
+>;
+
+export type OwnershipTransferredEventFilter =
+  TypedEventFilter<OwnershipTransferredEvent>;
+
+export interface UnderlyingAssetsAddedEventObject {
+  token: string;
+}
+export type UnderlyingAssetsAddedEvent = TypedEvent<
+  [string],
+  UnderlyingAssetsAddedEventObject
+>;
+
+export type UnderlyingAssetsAddedEventFilter =
+  TypedEventFilter<UnderlyingAssetsAddedEvent>;
+
+export interface UnderlyingAssetsRemovedEventObject {
+  token: string;
+}
+export type UnderlyingAssetsRemovedEvent = TypedEvent<
+  [string],
+  UnderlyingAssetsRemovedEventObject
+>;
+
+export type UnderlyingAssetsRemovedEventFilter =
+  TypedEventFilter<UnderlyingAssetsRemovedEvent>;
 
 export interface WithdrawEventObject {
   user: string;
@@ -255,13 +363,24 @@ export interface Vault extends BaseContract {
 
     CRV(overrides?: CallOverrides): Promise<[string]>;
 
+    CURVE_SWAP(overrides?: CallOverrides): Promise<[string]>;
+
     CVX(overrides?: CallOverrides): Promise<[string]>;
 
     LP(overrides?: CallOverrides): Promise<[string]>;
 
     PID(overrides?: CallOverrides): Promise<[BigNumber]>;
 
+    SWAP_ROUTER(overrides?: CallOverrides): Promise<[string]>;
+
+    addUnderlyingAsset(
+      _token: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
+
     claim(
+      _swapRewards: PromiseOrValue<boolean>,
+      _swapToken: PromiseOrValue<string>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
@@ -270,6 +389,7 @@ export interface Vault extends BaseContract {
     cvxAmountPerShare(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     deposit(
+      _token: PromiseOrValue<string>,
       _amount: PromiseOrValue<BigNumberish>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
@@ -283,17 +403,33 @@ export interface Vault extends BaseContract {
       [BigNumber, BigNumber] & { crvPending: BigNumber; cvxPending: BigNumber }
     >;
 
-    getUserInfo(
-      user: PromiseOrValue<string>,
-      overrides?: CallOverrides
-    ): Promise<[Vault.UserInfoStructOutput]>;
-
     getVaultRewards(
       info: Vault.UserInfoStruct,
       overrides?: CallOverrides
     ): Promise<
       [BigNumber, BigNumber] & { crvPending: BigNumber; cvxPending: BigNumber }
     >;
+
+    owner(overrides?: CallOverrides): Promise<[string]>;
+
+    removeUnderlyingAsset(
+      _token: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
+
+    renounceOwnership(
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
+
+    transferOwnership(
+      newOwner: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
+
+    underlyingAssets(
+      arg0: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<[boolean]>;
 
     userInfo(
       arg0: PromiseOrValue<string>,
@@ -308,6 +444,8 @@ export interface Vault extends BaseContract {
 
     withdraw(
       _amount: PromiseOrValue<BigNumberish>,
+      _swapRewards: PromiseOrValue<boolean>,
+      _swapToken: PromiseOrValue<string>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
   };
@@ -318,13 +456,24 @@ export interface Vault extends BaseContract {
 
   CRV(overrides?: CallOverrides): Promise<string>;
 
+  CURVE_SWAP(overrides?: CallOverrides): Promise<string>;
+
   CVX(overrides?: CallOverrides): Promise<string>;
 
   LP(overrides?: CallOverrides): Promise<string>;
 
   PID(overrides?: CallOverrides): Promise<BigNumber>;
 
+  SWAP_ROUTER(overrides?: CallOverrides): Promise<string>;
+
+  addUnderlyingAsset(
+    _token: PromiseOrValue<string>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
   claim(
+    _swapRewards: PromiseOrValue<boolean>,
+    _swapToken: PromiseOrValue<string>,
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
@@ -333,6 +482,7 @@ export interface Vault extends BaseContract {
   cvxAmountPerShare(overrides?: CallOverrides): Promise<BigNumber>;
 
   deposit(
+    _token: PromiseOrValue<string>,
     _amount: PromiseOrValue<BigNumberish>,
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
@@ -346,17 +496,33 @@ export interface Vault extends BaseContract {
     [BigNumber, BigNumber] & { crvPending: BigNumber; cvxPending: BigNumber }
   >;
 
-  getUserInfo(
-    user: PromiseOrValue<string>,
-    overrides?: CallOverrides
-  ): Promise<Vault.UserInfoStructOutput>;
-
   getVaultRewards(
     info: Vault.UserInfoStruct,
     overrides?: CallOverrides
   ): Promise<
     [BigNumber, BigNumber] & { crvPending: BigNumber; cvxPending: BigNumber }
   >;
+
+  owner(overrides?: CallOverrides): Promise<string>;
+
+  removeUnderlyingAsset(
+    _token: PromiseOrValue<string>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
+  renounceOwnership(
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
+  transferOwnership(
+    newOwner: PromiseOrValue<string>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
+  underlyingAssets(
+    arg0: PromiseOrValue<string>,
+    overrides?: CallOverrides
+  ): Promise<boolean>;
 
   userInfo(
     arg0: PromiseOrValue<string>,
@@ -371,6 +537,8 @@ export interface Vault extends BaseContract {
 
   withdraw(
     _amount: PromiseOrValue<BigNumberish>,
+    _swapRewards: PromiseOrValue<boolean>,
+    _swapToken: PromiseOrValue<string>,
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
@@ -381,19 +549,33 @@ export interface Vault extends BaseContract {
 
     CRV(overrides?: CallOverrides): Promise<string>;
 
+    CURVE_SWAP(overrides?: CallOverrides): Promise<string>;
+
     CVX(overrides?: CallOverrides): Promise<string>;
 
     LP(overrides?: CallOverrides): Promise<string>;
 
     PID(overrides?: CallOverrides): Promise<BigNumber>;
 
-    claim(overrides?: CallOverrides): Promise<void>;
+    SWAP_ROUTER(overrides?: CallOverrides): Promise<string>;
+
+    addUnderlyingAsset(
+      _token: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    claim(
+      _swapRewards: PromiseOrValue<boolean>,
+      _swapToken: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<void>;
 
     crvAmountPerShare(overrides?: CallOverrides): Promise<BigNumber>;
 
     cvxAmountPerShare(overrides?: CallOverrides): Promise<BigNumber>;
 
     deposit(
+      _token: PromiseOrValue<string>,
       _amount: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<void>;
@@ -407,17 +589,31 @@ export interface Vault extends BaseContract {
       [BigNumber, BigNumber] & { crvPending: BigNumber; cvxPending: BigNumber }
     >;
 
-    getUserInfo(
-      user: PromiseOrValue<string>,
-      overrides?: CallOverrides
-    ): Promise<Vault.UserInfoStructOutput>;
-
     getVaultRewards(
       info: Vault.UserInfoStruct,
       overrides?: CallOverrides
     ): Promise<
       [BigNumber, BigNumber] & { crvPending: BigNumber; cvxPending: BigNumber }
     >;
+
+    owner(overrides?: CallOverrides): Promise<string>;
+
+    removeUnderlyingAsset(
+      _token: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    renounceOwnership(overrides?: CallOverrides): Promise<void>;
+
+    transferOwnership(
+      newOwner: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    underlyingAssets(
+      arg0: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<boolean>;
 
     userInfo(
       arg0: PromiseOrValue<string>,
@@ -432,6 +628,8 @@ export interface Vault extends BaseContract {
 
     withdraw(
       _amount: PromiseOrValue<BigNumberish>,
+      _swapRewards: PromiseOrValue<boolean>,
+      _swapToken: PromiseOrValue<string>,
       overrides?: CallOverrides
     ): Promise<void>;
   };
@@ -457,6 +655,29 @@ export interface Vault extends BaseContract {
       amount?: null
     ): DepositEventFilter;
 
+    "OwnershipTransferred(address,address)"(
+      previousOwner?: PromiseOrValue<string> | null,
+      newOwner?: PromiseOrValue<string> | null
+    ): OwnershipTransferredEventFilter;
+    OwnershipTransferred(
+      previousOwner?: PromiseOrValue<string> | null,
+      newOwner?: PromiseOrValue<string> | null
+    ): OwnershipTransferredEventFilter;
+
+    "UnderlyingAssetsAdded(address)"(
+      token?: PromiseOrValue<string> | null
+    ): UnderlyingAssetsAddedEventFilter;
+    UnderlyingAssetsAdded(
+      token?: PromiseOrValue<string> | null
+    ): UnderlyingAssetsAddedEventFilter;
+
+    "UnderlyingAssetsRemoved(address)"(
+      token?: PromiseOrValue<string> | null
+    ): UnderlyingAssetsRemovedEventFilter;
+    UnderlyingAssetsRemoved(
+      token?: PromiseOrValue<string> | null
+    ): UnderlyingAssetsRemovedEventFilter;
+
     "Withdraw(address,uint256)"(
       user?: PromiseOrValue<string> | null,
       amount?: null
@@ -474,13 +695,24 @@ export interface Vault extends BaseContract {
 
     CRV(overrides?: CallOverrides): Promise<BigNumber>;
 
+    CURVE_SWAP(overrides?: CallOverrides): Promise<BigNumber>;
+
     CVX(overrides?: CallOverrides): Promise<BigNumber>;
 
     LP(overrides?: CallOverrides): Promise<BigNumber>;
 
     PID(overrides?: CallOverrides): Promise<BigNumber>;
 
+    SWAP_ROUTER(overrides?: CallOverrides): Promise<BigNumber>;
+
+    addUnderlyingAsset(
+      _token: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+
     claim(
+      _swapRewards: PromiseOrValue<boolean>,
+      _swapToken: PromiseOrValue<string>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
@@ -489,6 +721,7 @@ export interface Vault extends BaseContract {
     cvxAmountPerShare(overrides?: CallOverrides): Promise<BigNumber>;
 
     deposit(
+      _token: PromiseOrValue<string>,
       _amount: PromiseOrValue<BigNumberish>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
@@ -500,13 +733,29 @@ export interface Vault extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    getUserInfo(
-      user: PromiseOrValue<string>,
+    getVaultRewards(
+      info: Vault.UserInfoStruct,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    getVaultRewards(
-      info: Vault.UserInfoStruct,
+    owner(overrides?: CallOverrides): Promise<BigNumber>;
+
+    removeUnderlyingAsset(
+      _token: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+
+    renounceOwnership(
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+
+    transferOwnership(
+      newOwner: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+
+    underlyingAssets(
+      arg0: PromiseOrValue<string>,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
@@ -517,6 +766,8 @@ export interface Vault extends BaseContract {
 
     withdraw(
       _amount: PromiseOrValue<BigNumberish>,
+      _swapRewards: PromiseOrValue<boolean>,
+      _swapToken: PromiseOrValue<string>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
   };
@@ -528,13 +779,24 @@ export interface Vault extends BaseContract {
 
     CRV(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
+    CURVE_SWAP(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
     CVX(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     LP(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     PID(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
+    SWAP_ROUTER(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    addUnderlyingAsset(
+      _token: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
     claim(
+      _swapRewards: PromiseOrValue<boolean>,
+      _swapToken: PromiseOrValue<string>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -543,6 +805,7 @@ export interface Vault extends BaseContract {
     cvxAmountPerShare(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     deposit(
+      _token: PromiseOrValue<string>,
       _amount: PromiseOrValue<BigNumberish>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
@@ -556,13 +819,29 @@ export interface Vault extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    getUserInfo(
-      user: PromiseOrValue<string>,
+    getVaultRewards(
+      info: Vault.UserInfoStruct,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    getVaultRewards(
-      info: Vault.UserInfoStruct,
+    owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    removeUnderlyingAsset(
+      _token: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
+    renounceOwnership(
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
+    transferOwnership(
+      newOwner: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
+    underlyingAssets(
+      arg0: PromiseOrValue<string>,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
@@ -573,6 +852,8 @@ export interface Vault extends BaseContract {
 
     withdraw(
       _amount: PromiseOrValue<BigNumberish>,
+      _swapRewards: PromiseOrValue<boolean>,
+      _swapToken: PromiseOrValue<string>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
   };

@@ -2,12 +2,17 @@
 pragma solidity ^0.8.0;
 
 // Openzeppelin
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+// Curve Interfaces
+import "./interfaces/Curve/ISPool.sol";
 // Convex Interfaces
-import "./interfaces/IBaseRewardPool.sol";
-import "./interfaces/IBooster.sol";
-import "./interfaces/ICVX.sol";
+import "./interfaces/Convex/IBaseRewardPool.sol";
+import "./interfaces/Convex/IBooster.sol";
+import "./interfaces/Convex/ICVX.sol";
+// Uniswap Interfaces
+import "./interfaces/Uniswap/ISwapRouter.sol";
 // Test - Hardhat Console
 import "hardhat/console.sol";
 
@@ -15,7 +20,7 @@ import "hardhat/console.sol";
  * @title Vault Contract
  * @dev A contract managing deposits, withdrawals, and rewards for a specific pool.
  */
-contract Vault is ReentrancyGuard {
+contract Vault is ReentrancyGuard, Ownable {
     // Structs
 
     struct Reward {
@@ -34,14 +39,17 @@ contract Vault is ReentrancyGuard {
     IERC20 public immutable CRV;
     ICVX public immutable CVX;
     IBooster public immutable BOOSTER;
+    ISwapRouter public immutable SWAP_ROUTER;
+    ISPool public immutable CURVE_SWAP;
     IBaseRewardPool public immutable BASE_REWARD_POOL;
-    IERC20 public LP;
+    IERC20 public immutable LP;
     uint256 public immutable PID;
 
     uint256 public depositAmountTotal;
     uint256 public crvAmountPerShare;
     uint256 public cvxAmountPerShare;
     mapping(address => UserInfo) public userInfo;
+    mapping(address => bool) public underlyingAssets;
 
     uint256 private constant MULTIPLIER = 1e18;
 
@@ -50,46 +58,119 @@ contract Vault is ReentrancyGuard {
     event Deposit(address indexed user, uint256 amount);
     event Withdraw(address indexed user, uint256 amount);
     event Claim(address indexed user, uint256 crvReward, uint256 cvxReward);
+    event UnderlyingAssetsAdded(address indexed token);
+    event UnderlyingAssetsRemoved(address indexed token);
 
     // Constructor
 
     /**
      * @dev Constructor to initialize the Vault with required parameters.
-     * @param _crv Address of the CRV token
-     * @param _cvx Address of the CVX token
-     * @param _booster Address of the Booster contract
-     * @param _lp Address of the LP token
-     * @param _pid Pool ID
      */
     constructor(
         address _crv,
         address _cvx,
         address _booster,
-        address _lp,
+        address _swapRouter,
+        address _curveSwap,
         uint256 _pid
     ) {
         CRV = IERC20(_crv);
         CVX = ICVX(_cvx);
         BOOSTER = IBooster(_booster);
-        LP = IERC20(_lp);
-        PID = _pid;
+        SWAP_ROUTER = ISwapRouter(_swapRouter);
+        CURVE_SWAP = ISPool(_curveSwap);
         BASE_REWARD_POOL = IBaseRewardPool(BOOSTER.poolInfo(_pid).crvRewards);
+        LP = IERC20(BOOSTER.poolInfo(_pid).lptoken);
+        PID = _pid;
     }
 
     // External functions
 
-    /**
-     * @notice Allows users to deposit LP tokens into the vault.
-     * @param _amount The amount of LP tokens to deposit
-     */
-    function deposit(uint256 _amount) external nonReentrant {
+    function addUnderlyingAsset(address _token) external onlyOwner {
+        require(!underlyingAssets[_token], "Vault: Invalid underlying asset");
+
+        underlyingAssets[_token] = true;
+
+        emit UnderlyingAssetsAdded(_token);
+    }
+
+    function removeUnderlyingAsset(address _token) external onlyOwner {
+        require(underlyingAssets[_token], "Vault: Invalid underlying asset");
+
+        delete underlyingAssets[_token];
+
+        emit UnderlyingAssetsRemoved(_token);
+    }
+
+    function _swapExactInputSingleHop(
+        address tokenIn,
+        address tokenOut,
+        uint24 poolFee,
+        uint amountIn
+    ) private returns (uint amountOut) {
+        IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
+        IERC20(tokenIn).approve(address(SWAP_ROUTER), amountIn);
+
+        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
+            .ExactInputSingleParams({
+                tokenIn: tokenIn,
+                tokenOut: tokenOut,
+                fee: poolFee,
+                recipient: address(this),
+                deadline: block.timestamp,
+                amountIn: amountIn,
+                amountOutMinimum: 0,
+                sqrtPriceLimitX96: 0
+            });
+
+        amountOut = SWAP_ROUTER.exactInputSingle(params);
+    }
+
+    function deposit(address _token, uint256 _amount) external nonReentrant {
+        require(underlyingAssets[_token], "Vault: Invalid underlying asset");
         require(_amount > 0, "Vault: Invalid deposit amount");
+
+        IERC20(_token).transferFrom(msg.sender, address(this), _amount);
+
+        uint256 lpBalanceBeforeDeposit = LP.balanceOf(address(this));
+
+        uint256[4] memory amounts;
+        if (CURVE_SWAP.coins(0) == _token) {
+            amounts = [_amount, 0, 0, 0];
+            IERC20(_token).approve(address(CURVE_SWAP), _amount);
+        } else if (CURVE_SWAP.coins(1) == _token) {
+            amounts = [0, _amount, 0, 0];
+            IERC20(_token).approve(address(CURVE_SWAP), _amount);
+        } else if (CURVE_SWAP.coins(2) == _token) {
+            amounts = [0, 0, _amount, 0];
+            IERC20(_token).approve(address(CURVE_SWAP), _amount);
+        } else if (CURVE_SWAP.coins(3) == _token) {
+            amounts = [0, 0, 0, _amount];
+            IERC20(_token).approve(address(CURVE_SWAP), _amount);
+        } else {
+            address tokenOut = CURVE_SWAP.coins(0);
+            uint256 token0Amount = _swapExactInputSingleHop(
+                _token,
+                tokenOut,
+                3000,
+                _amount
+            );
+            require(token0Amount > 0, "Vault: Swap failed");
+
+            amounts = [token0Amount, 0, 0, 0];
+            IERC20(tokenOut).approve(address(CURVE_SWAP), token0Amount);
+        }
+
+        CURVE_SWAP.add_liquidity(amounts, 0);
+
+        uint256 lpBalanceAfterDeposit = LP.balanceOf(address(this));
+
+        uint256 lpBalance = lpBalanceAfterDeposit - lpBalanceBeforeDeposit;
+        require(lpBalance > 0, "Vault: Curve deposit failed");
 
         _getReward();
 
         UserInfo storage info = userInfo[msg.sender];
-        // Increase deposit amount
-        info.amount += _amount;
 
         if (crvAmountPerShare > info.crv.share) {
             // Update share & pending reward
@@ -106,10 +187,10 @@ contract Vault is ReentrancyGuard {
                 (info.amount * (cvxAmountPerShare - info.cvx.share)) /
                 MULTIPLIER;
         }
+        // Increase deposit amount
+        info.amount += _amount;
 
         depositAmountTotal = depositAmountTotal + _amount;
-
-        LP.transferFrom(msg.sender, address(this), _amount);
 
         LP.approve(address(BOOSTER), _amount);
 
@@ -118,16 +199,34 @@ contract Vault is ReentrancyGuard {
         emit Deposit(msg.sender, _amount);
     }
 
-    /**
-     * @notice Allows users to withdraw deposited LP tokens from the vault.
-     * @param _amount The amount of LP tokens to withdraw
-     */
-    function withdraw(uint256 _amount) external nonReentrant {
-        require(_amount > 0, "Vault: Invalid withdraw amount");
+    function withdraw(
+        uint256 _amount,
+        bool _swapRewards,
+        address _swapToken
+    ) external nonReentrant {
+        require(_amount > 0, "Vault: Invalid deposit amount");
 
         UserInfo storage info = userInfo[msg.sender];
 
         require(_amount <= info.amount, "Vault: Invalid withdraw amount");
+
+        uint256[4] memory tokenBalancesBefore;
+        uint256[4] memory tokenBalancesAfter;
+        for (uint256 i; i != 4; ++i) {
+            address token = CURVE_SWAP.coins(_convertUint256ToInt128(i));
+            tokenBalancesBefore[i] = IERC20(token).balanceOf(address(this));
+        }
+
+        CURVE_SWAP.remove_liquidity(_amount, [uint256(0), 0, 0, 0]);
+
+        for (uint256 i; i != 4; ++i) {
+            address token = CURVE_SWAP.coins(_convertUint256ToInt128(i));
+            tokenBalancesAfter[i] = IERC20(token).balanceOf(address(this));
+            uint256 amount = tokenBalancesAfter[i] - tokenBalancesBefore[i];
+            if (amount > 0) {
+                IERC20(token).transfer(msg.sender, amount);
+            }
+        }
 
         _withdrawAndUnwrap(_amount);
 
@@ -136,27 +235,47 @@ contract Vault is ReentrancyGuard {
         if (_amount == info.amount) {
             delete userInfo[msg.sender];
         } else {
-            // Decrease withdraw amount
-            info.amount -= _amount;
             // Update share & pending reward
             info.crv.share = crvAmountPerShare;
             info.crv.pending = 0;
             // Update share & pending reward
             info.cvx.share = cvxAmountPerShare;
             info.cvx.pending = 0;
+            // Decrease withdraw amount
+            info.amount -= _amount;
         }
 
         depositAmountTotal = depositAmountTotal - _amount;
 
         if (crvPending > 0) {
-            CRV.transfer(msg.sender, crvPending);
+            if (_swapRewards) {
+                uint256 swapTokenAmount = _swapExactInputSingleHop(
+                    address(CRV),
+                    _swapToken,
+                    3000,
+                    crvPending
+                );
+                require(swapTokenAmount > 0, "Vault: Swap failed");
+                IERC20(_swapToken).transfer(msg.sender, swapTokenAmount);
+            } else {
+                CRV.transfer(msg.sender, crvPending);
+            }
         }
 
         if (cvxPending > 0) {
-            CVX.transfer(msg.sender, cvxPending);
+            if (_swapRewards) {
+                uint256 swapTokenAmount = _swapExactInputSingleHop(
+                    address(CVX),
+                    _swapToken,
+                    3000,
+                    cvxPending
+                );
+                require(swapTokenAmount > 0, "Vault: Swap failed");
+                IERC20(_swapToken).transfer(msg.sender, swapTokenAmount);
+            } else {
+                CVX.transfer(msg.sender, cvxPending);
+            }
         }
-
-        LP.transfer(msg.sender, _amount);
 
         emit Withdraw(msg.sender, _amount);
     }
@@ -164,7 +283,10 @@ contract Vault is ReentrancyGuard {
     /**
      * @notice Allows users to claim pending rewards.
      */
-    function claim() external nonReentrant {
+    function claim(
+        bool _swapRewards,
+        address _swapToken
+    ) external nonReentrant {
         _getReward();
 
         UserInfo storage info = userInfo[msg.sender];
@@ -178,11 +300,33 @@ contract Vault is ReentrancyGuard {
         info.cvx.pending = 0;
 
         if (crvPending > 0) {
-            CRV.transfer(msg.sender, crvPending);
+            if (_swapRewards) {
+                uint256 swapTokenAmount = _swapExactInputSingleHop(
+                    address(CRV),
+                    _swapToken,
+                    3000,
+                    crvPending
+                );
+                require(swapTokenAmount > 0, "Vault: Swap failed");
+                IERC20(_swapToken).transfer(msg.sender, swapTokenAmount);
+            } else {
+                CRV.transfer(msg.sender, crvPending);
+            }
         }
 
         if (cvxPending > 0) {
-            CVX.transfer(msg.sender, cvxPending);
+            if (_swapRewards) {
+                uint256 swapTokenAmount = _swapExactInputSingleHop(
+                    address(CVX),
+                    _swapToken,
+                    3000,
+                    cvxPending
+                );
+                require(swapTokenAmount > 0, "Vault: Swap failed");
+                IERC20(_swapToken).transfer(msg.sender, swapTokenAmount);
+            } else {
+                CVX.transfer(msg.sender, cvxPending);
+            }
         }
 
         emit Claim(msg.sender, crvPending, cvxPending);
@@ -230,7 +374,7 @@ contract Vault is ReentrancyGuard {
                 //for reduction% take inverse of current cliff
                 uint256 reduction = totalCliffs - cliff;
                 //reduce
-                cvxEarned = cvxEarned * reduction / totalCliffs;
+                cvxEarned = (cvxEarned * reduction) / totalCliffs;
 
                 //supply cap check
                 uint256 amtTillMax = maxSupply - supply;
@@ -256,15 +400,6 @@ contract Vault is ReentrancyGuard {
     }
 
     // Public functions
-
-    /**
-     * @notice Get user information.
-     * @param user Address of the user to retrieve information for
-     * @return UserInfo User's information
-     */
-    function getUserInfo(address user) public view returns (UserInfo memory) {
-        return userInfo[user];
-    }
 
     /**
      * @notice Get pending rewards for a user.
@@ -293,6 +428,20 @@ contract Vault is ReentrancyGuard {
     }
 
     // Private functions
+
+    function _convertUint256ToInt128(
+        uint256 value
+    ) private pure returns (int128) {
+        // Ensure the sign bit is correctly interpreted
+        int128 result = int128(int256(value));
+
+        // Use bitwise operations to set the sign bit
+        if (value & (1 << 255) != 0) {
+            result |= int128(1) << 127;
+        }
+
+        return result;
+    }
 
     /**
      * @dev Internal function to get rewards and update share values.
